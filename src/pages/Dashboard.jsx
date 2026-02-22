@@ -1,5 +1,6 @@
 import { motion } from "framer-motion"
 import CountUp from "react-countup"
+import { useApp } from "../context/AppContext"
 import {
     Bell,
     Recycle,
