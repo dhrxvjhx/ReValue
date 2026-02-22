@@ -5,6 +5,8 @@ import SubmitWaste from "./pages/SubmitWaste"
 import Rewards from "./pages/Rewards"
 import Leaderboard from "./pages/Leaderboard"
 import AdminPanel from "./pages/AdminPanel"
+import History from "./pages/History"
+import Tips from "./pages/Tips"
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
         <Route path="rewards" element={<Rewards />} />
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="admin" element={<AdminPanel />} />
+        <Route path="history" element={<History />} />
+        <Route path="tips" element={<Tips />} />
       </Route>
     </Routes>
   )

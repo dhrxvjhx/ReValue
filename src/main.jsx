@@ -6,9 +6,9 @@ import { AppProvider } from "./context/AppContext"
 import "./index.css"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
+  <HashRouter>
     <AppProvider>
       <App />
     </AppProvider>
-  </BrowserRouter>
+  </HashRouter>
 )
