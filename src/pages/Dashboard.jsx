@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 function Dashboard() {
-    const { points, treesPlanted } = useApp()
+    const { totalPoints, treesPlanted, pickupRequests } = useApp()
 
     const hour = new Date().getHours()
 
@@ -35,7 +35,7 @@ function Dashboard() {
 
             {/* HERO CARD */}
             <motion.div
-                key={points}
+                key={totalPoints}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
@@ -58,7 +58,7 @@ function Dashboard() {
                 </p>
 
                 <h3 className="text-4xl font-bold mt-1 text-primary">
-                    <CountUp end={points} duration={1.5} />
+                    <CountUp end={totalPoints} duration={1.5} />
                 </h3>
 
                 <motion.svg
@@ -79,15 +79,38 @@ function Dashboard() {
                 </motion.svg>
             </motion.div>
 
-            {/* QUICK ACTIONS */}
-            <div className="grid grid-cols-3 gap-3">
-                <Action icon={<Recycle />} label="Recycle" />
-                <Action icon={<Calendar />} label="Schedule" />
-                <Action icon={<Lightbulb />} label="Tips" />
-                <Action icon={<Book />} label="Blog" />
-                <Action icon={<Heart />} label="Donate" />
-                <Action icon={<Recycle />} label="Rewards" />
-            </div>
+            {/* Pickup Status */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="
+    bg-[#111827] border border-white/10
+    p-5 rounded-2xl
+  "
+            >
+                <h3 className="text-lg font-semibold mb-2">
+                    Pickup Status
+                </h3>
+
+                {pickupRequests.length === 0 ? (
+                    <p className="text-gray-400 text-sm">
+                        No pickup scheduled yet.
+                    </p>
+                ) : (
+                    <div className="text-sm space-y-1">
+                        <p>
+                            Status:{" "}
+                            <span className="text-primary font-medium">
+                                {pickupRequests[pickupRequests.length - 1].status}
+                            </span>
+                        </p>
+                        <p className="text-gray-400">
+                            Date: {pickupRequests[pickupRequests.length - 1].pickupDate}
+                        </p>
+                    </div>
+                )}
+            </motion.div>
 
             {/* ECO CARD */}
             <motion.div
