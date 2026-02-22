@@ -11,6 +11,8 @@ import {
 } from "lucide-react"
 
 function Dashboard() {
+    const { points, treesPlanted } = useApp()
+
     const hour = new Date().getHours()
 
     const greeting =
@@ -23,7 +25,6 @@ function Dashboard() {
     return (
         <div className="relative space-y-8 overflow-hidden">
 
-
             {/* HEADER */}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">
@@ -34,6 +35,7 @@ function Dashboard() {
 
             {/* HERO CARD */}
             <motion.div
+                key={points}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
@@ -41,7 +43,6 @@ function Dashboard() {
           relative
           bg-gradient-to-br from-[#1E293B] to-[#0F172A]
           border border-white/10
-          text-primary
           p-6
           rounded-3xl
           overflow-hidden
@@ -52,26 +53,29 @@ function Dashboard() {
                     {greeting}, Dhruv 👋
                 </h2>
 
-                <p className="mt-2 text-primary">
+                <p className="mt-2 text-gray-400">
                     Total Points
                 </p>
 
-                <h3 className="text-4xl font-bold mt-1">
-                    <CountUp end={1200} duration={2} />
+                <h3 className="text-4xl font-bold mt-1 text-primary">
+                    <CountUp end={points} duration={1.5} />
                 </h3>
 
-                {/* ANIMATED SVG WAVE */}
                 <motion.svg
                     viewBox="0 0 1440 320"
                     className="absolute bottom-0 left-0 w-full h-20"
                     initial={{ y: 20 }}
                     animate={{ y: 0 }}
-                    transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                    transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                    }}
                 >
                     <path
-                        fill="rgba(255,255,255,0.15)"
+                        fill="rgba(255,255,255,0.1)"
                         d="M0,224L60,208C120,192,240,160,360,154.7C480,149,600,171,720,186.7C840,203,960,213,1080,192C1200,171,1320,117,1380,90.7L1440,64L1440,320L0,320Z"
-                    ></path>
+                    />
                 </motion.svg>
             </motion.div>
 
@@ -87,6 +91,7 @@ function Dashboard() {
 
             {/* ECO CARD */}
             <motion.div
+                key={treesPlanted}
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 whileTap={{ scale: 0.98 }}
@@ -108,7 +113,7 @@ function Dashboard() {
                 </div>
 
                 <div className="text-4xl font-bold">
-                    <CountUp end={33} duration={2} />
+                    <CountUp end={treesPlanted} duration={1.5} />
                 </div>
             </motion.div>
         </div>
