@@ -6,52 +6,73 @@ const POINTS_RULES = {
     plastic: 10,
     paper: 5,
     metal: 15,
+    cardboard: 8,
 }
 
 export function AppProvider({ children }) {
-    const [submissions, setSubmissions] = useState(() => {
-        const saved = localStorage.getItem("revalue_submissions")
+    const [pickupRequests, setPickupRequests] = useState(() => {
+        const saved = localStorage.getItem("revalue_pickups")
         return saved ? JSON.parse(saved) : []
-    })
-
-    const [points, setPoints] = useState(() => {
-        const saved = localStorage.getItem("revalue_points")
-        return saved ? JSON.parse(saved) : 0
     })
 
     useEffect(() => {
         localStorage.setItem(
-            "revalue_submissions",
-            JSON.stringify(submissions)
+            "revalue_pickups",
+            JSON.stringify(pickupRequests)
         )
-        localStorage.setItem("revalue_points", JSON.stringify(points))
-    }, [submissions, points])
+    }, [pickupRequests])
 
-    const addSubmission = (type, quantity) => {
-        const pts = POINTS_RULES[type] * quantity
-
-        const newSubmission = {
+    // Create new pickup request
+    const createPickupRequest = (items, pickupDate) => {
+        const newRequest = {
             id: Date.now(),
-            type,
-            quantity,
-            pointsEarned: pts,
-            date: new Date().toISOString(),
-            status: "approved",
+            items: items.map(item => ({
+                ...item,
+                actual: null,
+            })),
+            pickupDate,
+            status: "scheduled",
+            totalPoints: 0,
         }
 
-        setSubmissions(prev => [...prev, newSubmission])
-        setPoints(prev => prev + pts)
+        setPickupRequests(prev => [...prev, newRequest])
     }
 
-    const treesPlanted = Math.floor(points / 100)
+    // Admin confirms actual weight
+    const completePickup = (id, updatedItems) => {
+        setPickupRequests(prev =>
+            prev.map(req => {
+                if (req.id !== id) return req
+
+                const totalPoints = updatedItems.reduce((acc, item) => {
+                    return acc + POINTS_RULES[item.type] * item.actual
+                }, 0)
+
+                return {
+                    ...req,
+                    items: updatedItems,
+                    status: "completed",
+                    totalPoints,
+                }
+            })
+        )
+    }
+
+    // Derived values
+    const totalPoints = pickupRequests
+        .filter(req => req.status === "completed")
+        .reduce((acc, req) => acc + req.totalPoints, 0)
+
+    const treesPlanted = Math.floor(totalPoints / 100)
 
     return (
         <AppContext.Provider
             value={{
-                submissions,
-                points,
+                pickupRequests,
+                createPickupRequest,
+                completePickup,
+                totalPoints,
                 treesPlanted,
-                addSubmission,
             }}
         >
             {children}
