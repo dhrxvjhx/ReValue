@@ -112,6 +112,13 @@ function Dashboard() {
                 )}
             </motion.div>
 
+            {/* QUICK ACTIONS */}
+            <div className="flex gap-3 overflow-x-auto pb-2">
+                <QuickAction label="Leaderboard" />
+                <QuickAction label="History" />
+                <QuickAction label="Tips" />
+            </div>
+
             {/* ECO CARD */}
             <motion.div
                 key={treesPlanted}
@@ -160,6 +167,25 @@ function Action({ icon, label }) {
             <div className="text-primary">{icon}</div>
             <p className="text-sm text-gray-300">{label}</p>
         </motion.div>
+    )
+}
+
+function QuickAction({ label }) {
+    return (
+        <div className="
+      min-w-[110px]
+      bg-[#111827]
+      border border-white/10
+      rounded-xl
+      px-4 py-3
+      text-sm
+      text-center
+      cursor-pointer
+      hover:bg-white/5
+      transition
+    ">
+            {label}
+        </div>
     )
 }
 
