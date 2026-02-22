@@ -1,18 +1,12 @@
 import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
+import { Trophy, History, Lightbulb, Bell } from "lucide-react"
 import CountUp from "react-countup"
 import { useApp } from "../context/AppContext"
-import {
-    Bell,
-    Recycle,
-    Calendar,
-    Lightbulb,
-    Book,
-    Heart,
-} from "lucide-react"
 
 function Dashboard() {
     const { totalPoints, treesPlanted, pickupRequests } = useApp()
-
+    const navigate = useNavigate()
     const hour = new Date().getHours()
 
     const greeting =
@@ -113,10 +107,10 @@ function Dashboard() {
             </motion.div>
 
             {/* QUICK ACTIONS */}
-            <div className="flex gap-3 overflow-x-auto pb-2">
-                <QuickAction label="Leaderboard" />
-                <QuickAction label="History" />
-                <QuickAction label="Tips" />
+            <div className="grid grid-cols-3 gap-3">
+                <QuickAction icon={Trophy} label="Leaderboard" path="/leaderboard" />
+                <QuickAction icon={History} label="History" path="/history" />
+                <QuickAction icon={Lightbulb} label="Tips" path="/tips" />
             </div>
 
             {/* ECO CARD */}
@@ -170,21 +164,26 @@ function Action({ icon, label }) {
     )
 }
 
-function QuickAction({ label }) {
+function QuickAction({ icon: Icon, label, path }) {
+    const navigate = useNavigate()
+
     return (
-        <div className="
-      min-w-[110px]
-      bg-[#111827]
-      border border-white/10
-      rounded-xl
-      px-4 py-3
-      text-sm
-      text-center
-      cursor-pointer
-      hover:bg-white/5
-      transition
-    ">
-            {label}
+        <div
+            onClick={() => navigate(path)}
+            className="
+        bg-[#111827]
+        border border-white/10
+        rounded-xl
+        py-3
+        flex flex-col items-center justify-center
+        gap-2
+        cursor-pointer
+        hover:bg-white/5
+        transition
+      "
+        >
+            <Icon size={20} className="text-primary" />
+            <span className="text-sm">{label}</span>
         </div>
     )
 }
