@@ -11,6 +11,7 @@ import RewardHistory from "./pages/RewardHistory"
 import Tips from "./pages/Tips"
 import Auth from "./pages/Auth"
 import ProtectedRoute from "./routes/ProtectedRoute"
+import Settings from "./pages/Settings"
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="admin" element={<AdminPanel />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="history" element={<History />} />
         <Route path="reward-history" element={<RewardHistory />} />
         <Route path="tips" element={<Tips />} />

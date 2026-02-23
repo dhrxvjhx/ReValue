@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
 import { Settings, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
     const {
@@ -11,9 +12,11 @@ function Profile() {
         treesPlanted,
         userLevel,
         pickupRequests,
+        userData,
     } = useApp();
 
     const { currentUser, logout } = useAuth();
+    const navigate = useNavigate();
 
     const completedPickups = pickupRequests.filter(
         (req) => req.status === "completed"
@@ -27,9 +30,11 @@ function Profile() {
         }
     };
 
-    const displayName = currentUser?.email
-        ? currentUser.email.split("@")[0]
-        : "User";
+    const displayName =
+        userData?.name ||
+        currentUser?.displayName ||
+        currentUser?.email?.split("@")[0] ||
+        "User";
 
     const avatarLetter = displayName.charAt(0).toUpperCase();
 
@@ -70,7 +75,11 @@ function Profile() {
 
             {/* ACTIONS */}
             <div className="space-y-3">
-                <ActionRow icon={Settings} label="Settings" />
+                <ActionRow
+                    icon={Settings}
+                    label="Settings"
+                    onClick={() => navigate("/settings")}
+                />
                 <ActionRow
                     icon={LogOut}
                     label="Logout"
