@@ -1,6 +1,7 @@
-import { motion } from "framer-motion"
-import { useApp } from "../context/AppContext"
-import { Settings, LogOut } from "lucide-react"
+import { motion } from "framer-motion";
+import { useApp } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
+import { Settings, LogOut } from "lucide-react";
 
 function Profile() {
     const {
@@ -9,12 +10,28 @@ function Profile() {
         availablePoints,
         treesPlanted,
         userLevel,
-        pickupRequests
-    } = useApp()
+        pickupRequests,
+    } = useApp();
+
+    const { currentUser, logout } = useAuth();
 
     const completedPickups = pickupRequests.filter(
         (req) => req.status === "completed"
-    ).length
+    ).length;
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
+
+    const displayName = currentUser?.email
+        ? currentUser.email.split("@")[0]
+        : "User";
+
+    const avatarLetter = displayName.charAt(0).toUpperCase();
 
     return (
         <div className="space-y-6">
@@ -24,22 +41,22 @@ function Profile() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="bg-[#111827] border border-white/10 rounded-3xl p-6 text-center"
+                className="bg-glass backdrop-blur-lg border border-white/10 rounded-3xl p-6 text-center"
             >
-                <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold">
-                    D
+                <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">
+                    {avatarLetter}
                 </div>
 
                 <h2 className="mt-4 text-xl font-semibold">
-                    Dhruv Jha
+                    {displayName}
                 </h2>
 
                 <p className="text-primary text-sm mt-1">
-                    {userLevel.title}
+                    {userLevel?.title}
                 </p>
 
                 <span className="text-xs text-gray-400">
-                    Level {userLevel.level}
+                    Level {userLevel?.level}
                 </span>
             </motion.div>
 
@@ -54,29 +71,43 @@ function Profile() {
             {/* ACTIONS */}
             <div className="space-y-3">
                 <ActionRow icon={Settings} label="Settings" />
-                <ActionRow icon={LogOut} label="Logout" />
+                <ActionRow
+                    icon={LogOut}
+                    label="Logout"
+                    onClick={handleLogout}
+                    danger
+                />
             </div>
 
         </div>
-    )
+    );
 }
 
 function StatCard({ label, value }) {
     return (
-        <div className="bg-[#111827] border border-white/10 rounded-2xl p-4">
+        <div className="bg-glass backdrop-blur-lg border border-white/10 rounded-2xl p-4">
             <p className="text-gray-400 text-sm">{label}</p>
             <p className="text-xl font-bold mt-1 text-primary">{value}</p>
         </div>
-    )
+    );
 }
 
-function ActionRow({ icon: Icon, label }) {
+function ActionRow({ icon: Icon, label, onClick, danger }) {
     return (
-        <div className="flex items-center gap-3 bg-[#111827] border border-white/10 rounded-xl p-4 cursor-pointer hover:bg-white/5 transition">
-            <Icon size={18} className="text-primary" />
-            <span>{label}</span>
+        <div
+            onClick={onClick}
+            className={`flex items-center gap-3 bg-glass backdrop-blur-lg border border-white/10 rounded-xl p-4 cursor-pointer transition 
+        hover:bg-white/5 ${danger ? "hover:border-red-500/40" : ""}`}
+        >
+            <Icon
+                size={18}
+                className={danger ? "text-red-400" : "text-primary"}
+            />
+            <span className={danger ? "text-red-400" : ""}>
+                {label}
+            </span>
         </div>
-    )
+    );
 }
 
-export default Profile
+export default Profile;

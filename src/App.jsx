@@ -9,14 +9,14 @@ import Schedule from "./pages/Schedule"
 import Profile from "./pages/Profile"
 import RewardHistory from "./pages/RewardHistory"
 import Tips from "./pages/Tips"
-import Login from "./pages/Login"
+import Auth from "./pages/Auth"
 import ProtectedRoute from "./routes/ProtectedRoute"
 
 function App() {
   return (
     <Routes>
       {/* Public Route */}
-      <Route path="/login" element={<Login />} />
+      <Route path="/auth" element={<Auth />} />
 
       {/* Protected Routes */}
       <Route

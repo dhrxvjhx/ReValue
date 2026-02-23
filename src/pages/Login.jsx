@@ -48,6 +48,12 @@ const Login = () => {
                 <button className="bg-green-500 text-white px-4 py-2 w-full">
                     Login
                 </button>
+                <p
+                    className="text-sm text-center text-gray-400 cursor-pointer mt-3"
+                    onClick={() => navigate("/register")}
+                >
+                    Don't have an account? Register
+                </p>
             </form>
         </div>
     );

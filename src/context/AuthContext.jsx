@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { createUserIfNotExists } from "../firebase/firestoreService";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import { signOut } from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -11,6 +12,9 @@ export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const logout = async () => {
+        await signOut(auth);
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -35,7 +39,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ currentUser, userData }}>
+        <AuthContext.Provider value={{ currentUser, userData, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );
