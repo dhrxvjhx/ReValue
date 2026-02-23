@@ -89,14 +89,38 @@ export function AppProvider({ children }) {
 
     const userLevel = getLevel(totalPoints)
 
-    const redeemReward = (cost) => {
-        if (availablePoints < cost) {
+    const redeemReward = (reward) => {
+        if (availablePoints < reward.cost) {
             toast.error("Not enough points!")
             return
         }
+
+        setRedeemedPoints(prev => prev + reward.cost)
+
+        const newRedemption = {
+            id: Date.now(),
+            name: reward.name,
+            cost: reward.cost,
+            date: new Date().toLocaleDateString(),
+        }
+
+        setRedemptionHistory(prev => [...prev, newRedemption])
+
         toast.success("Reward redeemed successfully!")
-        setRedeemedPoints((prev) => prev + cost)
     }
+
+    const [redemptionHistory, setRedemptionHistory] = useState(() => {
+        const saved = localStorage.getItem("revalue_redemptions")
+        return saved ? JSON.parse(saved) : []
+    })
+    useEffect(() => {
+        localStorage.setItem(
+            "revalue_redemptions",
+            JSON.stringify(redemptionHistory)
+        )
+    }, [redemptionHistory])
+
+
     return (
         <AppContext.Provider
             value={{
@@ -108,7 +132,8 @@ export function AppProvider({ children }) {
                 treesPlanted,
                 userLevel,
                 redeemReward,
-                redeemedPoints
+                redeemedPoints,
+                redemptionHistory,
             }}
         >
             {children}

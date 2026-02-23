@@ -44,7 +44,7 @@ function Rewards() {
                     </div>
 
                     <button
-                        onClick={() => redeemReward(reward.cost)}
+                        onClick={() => redeemReward(reward)}
                         disabled={availablePoints < reward.cost}
                         className={`
               px-4 py-2 rounded-xl text-sm font-medium
