@@ -65,6 +65,15 @@ export function AppProvider({ children }) {
 
     const treesPlanted = Math.floor(totalPoints / 100)
 
+    const getLevel = (points) => {
+        if (points < 200) return { level: 1, title: "Beginner 🌱" }
+        if (points < 500) return { level: 2, title: "Eco Warrior 🌿" }
+        if (points < 1000) return { level: 3, title: "Green Champion 🌳" }
+        return { level: 4, title: "Planet Guardian 🌍" }
+    }
+
+    const userLevel = getLevel(totalPoints)
+
     return (
         <AppContext.Provider
             value={{
@@ -73,6 +82,7 @@ export function AppProvider({ children }) {
                 completePickup,
                 totalPoints,
                 treesPlanted,
+                userLevel,
             }}
         >
             {children}
