@@ -2,8 +2,9 @@ import { motion } from "framer-motion"
 import { useApp } from "../context/AppContext"
 import { Settings, LogOut } from "lucide-react"
 
+
 function Profile() {
-    const { totalPoints, treesPlanted, pickupRequests } = useApp()
+    const { totalPoints, treesPlanted, pickupRequests, userLevel } = useApp()
 
     const completedPickups = pickupRequests.filter(
         (req) => req.status === "completed"
@@ -34,7 +35,7 @@ function Profile() {
                 </h2>
 
                 <p className="text-gray-400 text-sm mt-1">
-                    Eco Warrior 🌱
+                    {userLevel.title}
                 </p>
             </motion.div>
 
