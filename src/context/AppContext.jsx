@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react"
+import toast from "react-hot-toast"
 
 const AppContext = createContext()
 
@@ -60,7 +61,7 @@ export function AppProvider({ children }) {
                     const weight = Number(item.actual) || 0
                     return acc + POINTS_RULES[item.type] * weight
                 }, 0)
-
+                toast.success("Pickup marked as completed!")
                 return {
                     ...req,
                     items: updatedItems,
@@ -90,10 +91,10 @@ export function AppProvider({ children }) {
 
     const redeemReward = (cost) => {
         if (availablePoints < cost) {
-            alert("Not enough points!")
+            toast.error("Not enough points!")
             return
         }
-
+        toast.success("Reward redeemed successfully!")
         setRedeemedPoints((prev) => prev + cost)
     }
     return (
