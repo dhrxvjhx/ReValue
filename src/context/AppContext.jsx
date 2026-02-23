@@ -14,7 +14,18 @@ export function AppProvider({ children }) {
         const saved = localStorage.getItem("revalue_pickups")
         return saved ? JSON.parse(saved) : []
     })
-    const [redeemedPoints, setRedeemedPoints] = useState(0)
+
+    const [redeemedPoints, setRedeemedPoints] = useState(() => {
+        const saved = localStorage.getItem("revalue_redeemed")
+        return saved ? JSON.parse(saved) : 0
+    })
+
+    useEffect(() => {
+        localStorage.setItem(
+            "revalue_redeemed",
+            JSON.stringify(redeemedPoints)
+        )
+    }, [redeemedPoints])
 
     useEffect(() => {
         localStorage.setItem(
@@ -46,7 +57,8 @@ export function AppProvider({ children }) {
                 if (req.id !== id) return req
 
                 const totalPoints = updatedItems.reduce((acc, item) => {
-                    return acc + POINTS_RULES[item.type] * item.actual
+                    const weight = Number(item.actual) || 0
+                    return acc + POINTS_RULES[item.type] * weight
                 }, 0)
 
                 return {
