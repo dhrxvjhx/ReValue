@@ -1,8 +1,11 @@
 import { motion } from "framer-motion"
 import { useApp } from "../context/AppContext"
+import { History } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 function Rewards() {
     const { availablePoints, redeemReward } = useApp()
+    const navigate = useNavigate()
 
     const rewards = [
         { id: 1, name: "₹50 Amazon Voucher", cost: 200 },
@@ -12,7 +15,14 @@ function Rewards() {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Rewards</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Rewards</h2>
+
+                <History
+                    className="cursor-pointer text-gray-400 hover:text-primary transition"
+                    onClick={() => navigate("/reward-history")}
+                />
+            </div>
 
             <p className="text-sm text-gray-400">
                 Available Points:{" "}

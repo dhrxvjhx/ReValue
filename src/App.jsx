@@ -6,6 +6,9 @@ import Rewards from "./pages/Rewards"
 import Leaderboard from "./pages/Leaderboard"
 import AdminPanel from "./pages/AdminPanel"
 import Schedule from "./pages/Schedule"
+import Profile from "./pages/Profile"
+import History from "./pages/History"
+import RewardHistory from "./pages/RewardHistory"
 
 function App() {
   return (
@@ -17,6 +20,9 @@ function App() {
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="admin" element={<AdminPanel />} />
         <Route path="schedule" element={<Schedule />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="history" element={<History />} />
+        <Route path="reward-history" element={<RewardHistory />} />
       </Route>
     </Routes>
   )
