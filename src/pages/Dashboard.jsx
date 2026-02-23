@@ -5,7 +5,7 @@ import CountUp from "react-countup"
 import { useApp } from "../context/AppContext"
 
 function Dashboard() {
-    const { totalPoints, treesPlanted, pickupRequests } = useApp()
+    const { availablePoints, treesPlanted, pickupRequests } = useApp()
     const navigate = useNavigate()
     const hour = new Date().getHours()
 
@@ -29,7 +29,7 @@ function Dashboard() {
 
             {/* HERO CARD */}
             <motion.div
-                key={totalPoints}
+                key={availablePoints}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
@@ -48,11 +48,11 @@ function Dashboard() {
                 </h2>
 
                 <p className="mt-2 text-gray-400">
-                    Total Points
+                    Available Points
                 </p>
 
                 <h3 className="text-4xl font-bold mt-1 text-primary">
-                    <CountUp end={totalPoints} duration={1.5} />
+                    <CountUp end={availablePoints} duration={1.5} />
                 </h3>
 
                 <motion.svg
