@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { updateProfile } from "firebase/auth";
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -14,6 +15,7 @@ function Auth() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [name, setName] = useState("");
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -29,7 +31,19 @@ function Auth() {
                 await signInWithEmailAndPassword(auth, email, password);
                 toast.success("Welcome back!");
             } else {
-                await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+                const user = userCredential.user;
+
+                // Update Firebase Auth profile
+                await updateProfile(user, {
+                    displayName: name,
+                });
+
                 toast.success("Account created successfully!");
             }
 
@@ -85,8 +99,8 @@ function Auth() {
                     <button
                         onClick={() => setIsLogin(true)}
                         className={`flex-1 py-2 rounded-lg text-sm z-10 transition ${isLogin
-                                ? "text-black font-semibold"
-                                : "text-gray-300 hover:text-white"
+                            ? "text-black font-semibold"
+                            : "text-gray-300 hover:text-white"
                             }`}
                     >
                         Login
@@ -95,8 +109,8 @@ function Auth() {
                     <button
                         onClick={() => setIsLogin(false)}
                         className={`flex-1 py-2 rounded-lg text-sm z-10 transition ${!isLogin
-                                ? "text-black font-semibold"
-                                : "text-gray-300 hover:text-white"
+                            ? "text-black font-semibold"
+                            : "text-gray-300 hover:text-white"
                             }`}
                     >
                         Register
@@ -104,6 +118,17 @@ function Auth() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+
+                    {!isLogin && (
+                        <input
+                            type="text"
+                            placeholder="Full Name"
+                            className="w-full p-3 bg-[#1f2937] text-white placeholder-gray-400 rounded-xl border border-white/10 focus:outline-none focus:border-primary"
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    )}
+
                     <input
                         type="email"
                         placeholder="Email"
@@ -131,6 +156,7 @@ function Auth() {
                                 : "Create Account"}
                     </button>
                 </form>
+
             </motion.div>
         </div>
     );

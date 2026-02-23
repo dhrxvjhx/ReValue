@@ -15,6 +15,7 @@ export const createUserIfNotExists = async (user) => {
 
             await setDoc(userRef, {
                 email: user.email,
+                name: user.displayName || "User",
                 role: "user",
                 totalPoints: 0,
                 redeemedPoints: 0,
