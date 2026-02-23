@@ -1,72 +1,72 @@
-import { useApp } from "../context/AppContext"
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { getPickups, completePickup } from "../firebase/pickupService";
 
 function AdminPanel() {
-    const { pickupRequests, completePickup } = useApp()
+    const { currentUser, userData } = useAuth();
+    const [pickups, setPickups] = useState([]);
 
-    const scheduled = pickupRequests.filter(
-        (req) => req.status === "scheduled"
-    )
+    useEffect(() => {
+        if (!currentUser || !userData) return;
+
+        getPickups(currentUser.uid, userData.role)
+            .then(setPickups)
+            .catch(console.error);
+    }, [currentUser, userData]);
+
+    const scheduled = pickups.filter(
+        (pickup) => pickup.status === "pending"
+    );
 
     if (scheduled.length === 0) {
         return (
             <div className="text-center text-gray-400 mt-10">
-                No scheduled pickups.
+                No pending pickups.
             </div>
-        )
+        );
     }
 
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold">Admin Panel</h2>
 
-            {scheduled.map((request) => (
+            {scheduled.map((pickup) => (
                 <PickupCard
-                    key={request.id}
-                    request={request}
-                    onComplete={completePickup}
+                    key={pickup.id}
+                    pickup={pickup}
+                    adminId={currentUser.uid}
                 />
             ))}
         </div>
-    )
+    );
 }
 
-function PickupCard({ request, onComplete }) {
-    const [updatedItems, setUpdatedItems] = useState(
-        request.items.map((item) => ({
+function PickupCard({ pickup, adminId }) {
+    const [weights, setWeights] = useState(
+        pickup.items?.map(item => ({
             ...item,
-            actual: item.estimated,
-        }))
-    )
+            actual: item.estimated
+        })) || []
+    );
 
     const updateActual = (index, value) => {
-        const copy = [...updatedItems]
-        copy[index].actual = Number(value)
-        setUpdatedItems(copy)
-    }
+        const copy = [...weights];
+        copy[index].actual = Number(value);
+        setWeights(copy);
+    };
 
-    const handleComplete = () => {
-        onComplete(request.id, updatedItems)
-    }
+    const handleComplete = async () => {
+        await completePickup(pickup.id, weights, adminId);
+        window.location.reload();
+    };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="
-        bg-[#111827]
-        border border-white/10
-        rounded-2xl
-        p-5
-        space-y-4
-      "
-        >
+        <div className="bg-[#111827] border border-white/10 rounded-2xl p-5 space-y-4">
             <div className="text-sm text-gray-400">
-                {request.pickupDate}
+                {pickup.scheduledDate}
             </div>
 
-            {updatedItems.map((item, index) => (
+            {weights.map((item, index) => (
                 <div key={index} className="flex justify-between items-center">
                     <span className="capitalize">{item.type}</span>
 
@@ -85,8 +85,8 @@ function PickupCard({ request, onComplete }) {
             >
                 Mark as Completed
             </button>
-        </motion.div>
-    )
+        </div>
+    );
 }
 
-export default AdminPanel
+export default AdminPanel;
