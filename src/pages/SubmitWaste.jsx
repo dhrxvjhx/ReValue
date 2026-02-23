@@ -1,31 +1,31 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function SubmitWaste() {
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
     const [items, setItems] = useState([
         { type: "plastic", estimated: "" }
-    ])
+    ]);
 
     const addItem = () => {
-        setItems([...items, { type: "plastic", estimated: "" }])
-    }
+        setItems([...items, { type: "plastic", estimated: "" }]);
+    };
 
     const updateItem = (index, field, value) => {
-        const updated = [...items]
-        updated[index][field] = value
-        setItems(updated)
-    }
+        const updated = [...items];
+        updated[index][field] = value;
+        setItems(updated);
+    };
 
     const handleNext = () => {
         if (items.some(item => !item.estimated || item.estimated <= 0)) {
-            alert("Please enter valid estimated weights")
-            return
+            alert("Please enter valid estimated weights");
+            return;
         }
 
-        navigate("/schedule", { state: { items } })
-    }
+        navigate("/schedule", { state: { items } });
+    };
 
     return (
         <div className="space-y-6">
@@ -71,7 +71,7 @@ function SubmitWaste() {
                 Continue to Schedule
             </button>
         </div>
-    )
+    );
 }
 
-export default SubmitWaste
+export default SubmitWaste;
