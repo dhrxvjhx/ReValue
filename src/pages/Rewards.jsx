@@ -1,41 +1,63 @@
-import { Gift } from "lucide-react"
-
-const rewards = [
-    { title: "Amazon Voucher", points: 500 },
-    { title: "Plant a Tree Donation", points: 300 },
-    { title: "Eco Bottle", points: 700 },
-]
+import { motion } from "framer-motion"
+import { useApp } from "../context/AppContext"
 
 function Rewards() {
+    const { availablePoints, redeemReward } = useApp()
+
+    const rewards = [
+        { id: 1, name: "₹50 Amazon Voucher", cost: 200 },
+        { id: 2, name: "Plant a Tree 🌳", cost: 300 },
+        { id: 3, name: "Eco T-Shirt", cost: 500 },
+    ]
+
     return (
-        <div>
-            <h2 className="text-3xl font-bold mb-8">
-                Redeem Rewards 🎁
-            </h2>
+        <div className="space-y-6">
+            <h2 className="text-2xl font-bold">Rewards</h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {rewards.map((reward, index) => (
-                    <div
-                        key={index}
-                        className="glass-card p-6 flex flex-col justify-between"
-                    >
-                        <div className="flex items-center gap-4 mb-4">
-                            <Gift className="text-primary" size={24} />
-                            <h3 className="text-lg font-semibold">
-                                {reward.title}
-                            </h3>
-                        </div>
+            <p className="text-sm text-gray-400">
+                Available Points:{" "}
+                <span className="text-primary font-semibold">
+                    {availablePoints}
+                </span>
+            </p>
 
-                        <p className="text-gray-400 mb-6">
-                            {reward.points} Points Required
+            {rewards.map((reward) => (
+                <motion.div
+                    key={reward.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="
+            bg-[#111827]
+            border border-white/10
+            rounded-2xl
+            p-5
+            flex justify-between items-center
+          "
+                >
+                    <div>
+                        <p className="font-medium">
+                            {reward.name}
                         </p>
-
-                        <button className="bg-primary hover:bg-green-600 transition py-2 rounded-xl font-semibold">
-                            Redeem
-                        </button>
+                        <p className="text-sm text-gray-400">
+                            {reward.cost} pts
+                        </p>
                     </div>
-                ))}
-            </div>
+
+                    <button
+                        onClick={() => redeemReward(reward.cost)}
+                        disabled={availablePoints < reward.cost}
+                        className={`
+              px-4 py-2 rounded-xl text-sm font-medium
+              ${availablePoints >= reward.cost
+                                ? "bg-primary"
+                                : "bg-gray-600 cursor-not-allowed"
+                            }
+            `}
+                    >
+                        Redeem
+                    </button>
+                </motion.div>
+            ))}
         </div>
     )
 }
