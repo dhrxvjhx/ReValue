@@ -3,8 +3,9 @@ import { useApp } from "../context/AppContext"
 import { Settings, LogOut } from "lucide-react"
 
 
+
 function Profile() {
-    const { totalPoints, treesPlanted, pickupRequests, userLevel } = useApp()
+    const { totalPoints, availablePoints, redeemedPoints, treesPlanted, pickupRequests, userLevel } = useApp()
 
     const completedPickups = pickupRequests.filter(
         (req) => req.status === "completed"
@@ -42,10 +43,10 @@ function Profile() {
             {/* STATS */}
             <div className="grid grid-cols-2 gap-4">
 
-                <StatCard label="Total Points" value={totalPoints} />
+                <StatCard label="Total Earned" value={totalPoints} />
+                <StatCard label="Redeemed" value={redeemedPoints} />
+                <StatCard label="Available Balance" value={availablePoints} />
                 <StatCard label="Trees Planted" value={treesPlanted} />
-                <StatCard label="Completed Pickups" value={completedPickups} />
-                <StatCard label="Scheduled Pickups" value={pickupRequests.length - completedPickups} />
 
             </div>
 
