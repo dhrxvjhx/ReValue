@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react"
+import toast from "react-hot-toast"
 
 const AppContext = createContext()
 
@@ -6,52 +7,133 @@ const POINTS_RULES = {
     plastic: 10,
     paper: 5,
     metal: 15,
+    cardboard: 8,
 }
 
 export function AppProvider({ children }) {
-    const [submissions, setSubmissions] = useState(() => {
-        const saved = localStorage.getItem("revalue_submissions")
+    const [pickupRequests, setPickupRequests] = useState(() => {
+        const saved = localStorage.getItem("revalue_pickups")
         return saved ? JSON.parse(saved) : []
     })
 
-    const [points, setPoints] = useState(() => {
-        const saved = localStorage.getItem("revalue_points")
+    const [redeemedPoints, setRedeemedPoints] = useState(() => {
+        const saved = localStorage.getItem("revalue_redeemed")
         return saved ? JSON.parse(saved) : 0
     })
 
     useEffect(() => {
         localStorage.setItem(
-            "revalue_submissions",
-            JSON.stringify(submissions)
+            "revalue_redeemed",
+            JSON.stringify(redeemedPoints)
         )
-        localStorage.setItem("revalue_points", JSON.stringify(points))
-    }, [submissions, points])
+    }, [redeemedPoints])
 
-    const addSubmission = (type, quantity) => {
-        const pts = POINTS_RULES[type] * quantity
+    useEffect(() => {
+        localStorage.setItem(
+            "revalue_pickups",
+            JSON.stringify(pickupRequests)
+        )
+    }, [pickupRequests])
 
-        const newSubmission = {
+    // Create new pickup request
+    const createPickupRequest = (items, pickupDate) => {
+        const newRequest = {
             id: Date.now(),
-            type,
-            quantity,
-            pointsEarned: pts,
-            date: new Date().toISOString(),
-            status: "approved",
+            items: items.map(item => ({
+                ...item,
+                actual: null,
+            })),
+            pickupDate,
+            status: "scheduled",
+            totalPoints: 0,
         }
 
-        setSubmissions(prev => [...prev, newSubmission])
-        setPoints(prev => prev + pts)
+        setPickupRequests(prev => [...prev, newRequest])
     }
 
-    const treesPlanted = Math.floor(points / 100)
+    // Admin confirms actual weight
+    const completePickup = (id, updatedItems) => {
+        setPickupRequests(prev =>
+            prev.map(req => {
+                if (req.id !== id) return req
+
+                const totalPoints = updatedItems.reduce((acc, item) => {
+                    const weight = Number(item.actual) || 0
+                    return acc + POINTS_RULES[item.type] * weight
+                }, 0)
+                toast.success("Pickup marked as completed!")
+                return {
+                    ...req,
+                    items: updatedItems,
+                    status: "completed",
+                    totalPoints,
+                }
+            })
+        )
+    }
+
+    // Derived values
+    const totalPoints = pickupRequests
+        .filter(req => req.status === "completed")
+        .reduce((acc, req) => acc + req.totalPoints, 0)
+
+    const availablePoints = totalPoints - redeemedPoints
+    const treesPlanted = Math.floor(totalPoints / 100)
+
+    const getLevel = (points) => {
+        if (points < 200) return { level: 1, title: "Beginner 🌱" }
+        if (points < 500) return { level: 2, title: "Eco Warrior 🌿" }
+        if (points < 1000) return { level: 3, title: "Green Champion 🌳" }
+        return { level: 4, title: "Planet Guardian 🌍" }
+    }
+
+    const userLevel = getLevel(totalPoints)
+
+    const redeemReward = (reward) => {
+        if (availablePoints < reward.cost) {
+            toast.error("Not enough points!")
+            return
+        }
+
+        setRedeemedPoints(prev => prev + reward.cost)
+
+        const newRedemption = {
+            id: Date.now(),
+            name: reward.name,
+            cost: reward.cost,
+            date: new Date().toLocaleDateString(),
+        }
+
+        setRedemptionHistory(prev => [...prev, newRedemption])
+
+        toast.success("Reward redeemed successfully!")
+    }
+
+    const [redemptionHistory, setRedemptionHistory] = useState(() => {
+        const saved = localStorage.getItem("revalue_redemptions")
+        return saved ? JSON.parse(saved) : []
+    })
+    useEffect(() => {
+        localStorage.setItem(
+            "revalue_redemptions",
+            JSON.stringify(redemptionHistory)
+        )
+    }, [redemptionHistory])
+
 
     return (
         <AppContext.Provider
             value={{
-                submissions,
-                points,
+                pickupRequests,
+                createPickupRequest,
+                completePickup,
+                totalPoints,
+                availablePoints,
                 treesPlanted,
-                addSubmission,
+                userLevel,
+                redeemReward,
+                redeemedPoints,
+                redemptionHistory,
             }}
         >
             {children}

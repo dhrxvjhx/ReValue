@@ -1,47 +1,45 @@
+import { Home, Recycle, Gift, User } from "lucide-react"
 import { NavLink } from "react-router-dom"
-import {
-    LayoutDashboard,
-    Upload,
-    Gift,
-    Trophy,
-} from "lucide-react"
 
 function BottomNav() {
-    const linkStyle = ({ isActive }) =>
-        `flex flex-col items-center text-xs ${isActive ? "text-primary" : "text-gray-400"
-        }`
-
     return (
-        <div className="
-  fixed bottom-6 left-1/2 -translate-x-1/2
-  w-full max-w-md mx-auto
-  bg-white/5 backdrop-blur-2xl
-  border border-white/10
-  rounded-3xl
-  py-4 px-8
-  flex justify-between
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]
-">
-            <NavLink to="/" className={linkStyle}>
-                <LayoutDashboard size={20} />
-                Home
-            </NavLink>
-
-            <NavLink to="/submit" className={linkStyle}>
-                <Upload size={20} />
-                Submit
-            </NavLink>
-
-            <NavLink to="/rewards" className={linkStyle}>
-                <Gift size={20} />
-                Rewards
-            </NavLink>
-
-            <NavLink to="/leaderboard" className={linkStyle}>
-                <Trophy size={20} />
-                Rank
-            </NavLink>
+        <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50">
+            <div
+                className="
+          w-full max-w-md
+          bg-[#111827]/80 backdrop-blur-md
+          border border-white/10
+          rounded-2xl
+          py-3 px-2
+          flex justify-between
+          shadow-2xl
+        "
+            >
+                <NavItem to="/" icon={Home} label="Home" />
+                <NavItem to="/submit" icon={Recycle} label="Recycle" />
+                <NavItem to="/rewards" icon={Gift} label="Rewards" />
+                <NavItem to="/profile" icon={User} label="Profile" />
+            </div>
         </div>
+    )
+}
+
+function NavItem({ to, icon: Icon, label }) {
+    return (
+        <NavLink
+            to={to}
+            className={({ isActive }) =>
+                `
+        flex flex-col items-center justify-center
+        flex-1
+        transition
+        ${isActive ? "text-primary" : "text-gray-400"}
+        `
+            }
+        >
+            <Icon size={20} />
+            <span className="text-[11px] mt-1">{label}</span>
+        </NavLink>
     )
 }
 

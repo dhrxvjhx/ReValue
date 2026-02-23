@@ -1,18 +1,12 @@
 import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
+import { Trophy, History, Lightbulb, Bell } from "lucide-react"
 import CountUp from "react-countup"
 import { useApp } from "../context/AppContext"
-import {
-    Bell,
-    Recycle,
-    Calendar,
-    Lightbulb,
-    Book,
-    Heart,
-} from "lucide-react"
 
 function Dashboard() {
-    const { points, treesPlanted } = useApp()
-
+    const { availablePoints, treesPlanted, pickupRequests } = useApp()
+    const navigate = useNavigate()
     const hour = new Date().getHours()
 
     const greeting =
@@ -35,7 +29,7 @@ function Dashboard() {
 
             {/* HERO CARD */}
             <motion.div
-                key={points}
+                key={availablePoints}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
@@ -54,11 +48,11 @@ function Dashboard() {
                 </h2>
 
                 <p className="mt-2 text-gray-400">
-                    Total Points
+                    Available Points
                 </p>
 
                 <h3 className="text-4xl font-bold mt-1 text-primary">
-                    <CountUp end={points} duration={1.5} />
+                    <CountUp end={availablePoints} duration={1.5} />
                 </h3>
 
                 <motion.svg
@@ -79,14 +73,44 @@ function Dashboard() {
                 </motion.svg>
             </motion.div>
 
+            {/* Pickup Status */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="
+    bg-[#111827] border border-white/10
+    p-5 rounded-2xl
+  "
+            >
+                <h3 className="text-lg font-semibold mb-2">
+                    Pickup Status
+                </h3>
+
+                {pickupRequests.length === 0 ? (
+                    <p className="text-gray-400 text-sm">
+                        No pickup scheduled yet.
+                    </p>
+                ) : (
+                    <div className="text-sm space-y-1">
+                        <p>
+                            Status:{" "}
+                            <span className="text-primary font-medium">
+                                {pickupRequests[pickupRequests.length - 1].status}
+                            </span>
+                        </p>
+                        <p className="text-gray-400">
+                            Date: {pickupRequests[pickupRequests.length - 1].pickupDate}
+                        </p>
+                    </div>
+                )}
+            </motion.div>
+
             {/* QUICK ACTIONS */}
             <div className="grid grid-cols-3 gap-3">
-                <Action icon={<Recycle />} label="Recycle" />
-                <Action icon={<Calendar />} label="Schedule" />
-                <Action icon={<Lightbulb />} label="Tips" />
-                <Action icon={<Book />} label="Blog" />
-                <Action icon={<Heart />} label="Donate" />
-                <Action icon={<Recycle />} label="Rewards" />
+                <QuickAction icon={Trophy} label="Leaderboard" path="/leaderboard" />
+                <QuickAction icon={History} label="History" path="/history" />
+                <QuickAction icon={Lightbulb} label="Tips" path="/tips" />
             </div>
 
             {/* ECO CARD */}
@@ -137,6 +161,30 @@ function Action({ icon, label }) {
             <div className="text-primary">{icon}</div>
             <p className="text-sm text-gray-300">{label}</p>
         </motion.div>
+    )
+}
+
+function QuickAction({ icon: Icon, label, path }) {
+    const navigate = useNavigate()
+
+    return (
+        <div
+            onClick={() => navigate(path)}
+            className="
+        bg-[#111827]
+        border border-white/10
+        rounded-xl
+        py-3
+        flex flex-col items-center justify-center
+        gap-2
+        cursor-pointer
+        hover:bg-white/5
+        transition
+      "
+        >
+            <Icon size={20} className="text-primary" />
+            <span className="text-sm">{label}</span>
+        </div>
     )
 }
 
