@@ -10,11 +10,24 @@ import Profile from "./pages/Profile"
 import History from "./pages/History"
 import RewardHistory from "./pages/RewardHistory"
 import Tips from "./pages/Tips"
+import Login from "./pages/Login"
+import ProtectedRoute from "./routes/ProtectedRoute"
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      {/* Public Route */}
+      <Route path="/login" element={<Login />} />
+
+      {/* Protected Routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Dashboard />} />
         <Route path="submit" element={<SubmitWaste />} />
         <Route path="rewards" element={<Rewards />} />
@@ -29,5 +42,3 @@ function App() {
     </Routes>
   )
 }
-
-export default App
