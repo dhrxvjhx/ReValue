@@ -1,38 +1,58 @@
-import { useLocation, useNavigate } from "react-router-dom"
-import { useState, useEffect } from "react"
-import { useApp } from "../context/AppContext"
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { createPickup } from "../firebase/pickupService";
 
 function Schedule() {
-    const location = useLocation()
-    const navigate = useNavigate()
-    const { createPickupRequest } = useApp()
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { currentUser } = useAuth();
 
-    const items = location.state?.items
+    const items = location.state?.items;
 
-    const [date, setDate] = useState("")
-    const [timeSlot, setTimeSlot] = useState("9AM - 11AM")
+    const [date, setDate] = useState("");
+    const [timeSlot, setTimeSlot] = useState("9AM - 11AM");
+    const [loading, setLoading] = useState(false);
 
     // Prevent direct access without estimate step
     useEffect(() => {
         if (!items) {
-            navigate("/submit")
+            navigate("/submit");
         }
-    }, [items, navigate])
+    }, [items, navigate]);
 
-    if (!items) return null
+    if (!items) return null;
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!date) {
-            alert("Please select a date")
-            return
+            alert("Please select a date");
+            return;
         }
 
-        const pickupDateTime = `${date} | ${timeSlot}`
+        if (!currentUser) {
+            alert("You must be logged in");
+            return;
+        }
 
-        createPickupRequest(items, pickupDateTime)
+        const pickupDateTime = `${date} | ${timeSlot}`;
 
-        navigate("/")
-    }
+        try {
+            setLoading(true);
+
+            await createPickup({
+                userId: currentUser.uid,
+                items,
+                scheduledDate: pickupDateTime,
+            });
+
+            navigate("/");
+        } catch (error) {
+            console.error("Pickup creation failed:", error);
+            alert("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -64,12 +84,13 @@ function Schedule() {
 
             <button
                 onClick={handleConfirm}
-                className="w-full py-3 bg-primary rounded-xl"
+                disabled={loading}
+                className="w-full py-3 bg-primary rounded-xl disabled:opacity-50"
             >
-                Confirm Pickup
+                {loading ? "Creating Pickup..." : "Confirm Pickup"}
             </button>
         </div>
-    )
+    );
 }
 
-export default Schedule
+export default Schedule;

@@ -2,13 +2,19 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
 export const createPickup = async (pickupData) => {
-    const pickupRef = await addDoc(collection(db, "pickups"), {
-        ...pickupData,
-        status: "pending",
-        actualWeights: null,
-        pointsEarned: 0,
-        createdAt: serverTimestamp()
-    });
+    try {
+        const pickupRef = await addDoc(collection(db, "pickups"), {
+            ...pickupData,
+            status: "pending",
+            actualWeights: null,
+            pointsEarned: 0,
+            createdAt: serverTimestamp(),
+        });
 
-    return pickupRef.id;
+        console.log("✅ Pickup created with ID:", pickupRef.id);
+        return pickupRef.id;
+    } catch (error) {
+        console.error("❌ Error creating pickup:", error);
+        throw error;
+    }
 };
