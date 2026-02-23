@@ -9,7 +9,6 @@ import Schedule from "./pages/Schedule"
 import Profile from "./pages/Profile"
 import History from "./pages/History"
 import RewardHistory from "./pages/RewardHistory"
-import History from "./pages/History"
 import Tips from "./pages/Tips"
 
 function App() {
@@ -25,7 +24,6 @@ function App() {
         <Route path="profile" element={<Profile />} />
         <Route path="history" element={<History />} />
         <Route path="reward-history" element={<RewardHistory />} />
-        <Route path="history" element={<History />} />
         <Route path="tips" element={<Tips />} />
       </Route>
     </Routes>
