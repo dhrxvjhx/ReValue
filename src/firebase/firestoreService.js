@@ -1,5 +1,19 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+
+export const getAgents = async () => {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("role", "==", "agent"));
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+    }));
+};
+
 
 export const createUserIfNotExists = async (user) => {
     try {

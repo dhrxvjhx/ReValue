@@ -1,89 +1,79 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getPickups, completePickup } from "../firebase/pickupService";
+import {
+    getPickups,
+    assignAgentToPickup
+} from "../firebase/pickupService";
+import { getAgents } from "../firebase/firestoreService";
 
 function AdminPanel() {
     const { currentUser, userData } = useAuth();
     const [pickups, setPickups] = useState([]);
+    const [agents, setAgents] = useState([]);
 
     useEffect(() => {
         if (!currentUser || !userData) return;
 
         getPickups(currentUser.uid, userData.role)
-            .then(setPickups)
-            .catch(console.error);
+            .then(setPickups);
+
+        getAgents().then(setAgents);
     }, [currentUser, userData]);
 
-    const scheduled = pickups.filter(
-        (pickup) => pickup.status === "pending"
-    );
+    const pending = pickups.filter(p => p.status === "pending");
 
-    if (scheduled.length === 0) {
-        return (
-            <div className="text-center text-gray-400 mt-10">
-                No pending pickups.
-            </div>
-        );
+    if (pending.length === 0) {
+        return <div className="text-gray-400">No pending pickups</div>;
     }
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Admin Panel</h2>
+            <h2 className="text-2xl font-bold">Assign Pickups</h2>
 
-            {scheduled.map((pickup) => (
-                <PickupCard
+            {pending.map(pickup => (
+                <AssignCard
                     key={pickup.id}
                     pickup={pickup}
-                    adminId={currentUser.uid}
+                    agents={agents}
                 />
             ))}
         </div>
     );
 }
 
-function PickupCard({ pickup, adminId }) {
-    const [weights, setWeights] = useState(
-        pickup.items?.map(item => ({
-            ...item,
-            actual: item.estimated
-        })) || []
-    );
+function AssignCard({ pickup, agents }) {
+    const [selectedAgent, setSelectedAgent] = useState("");
 
-    const updateActual = (index, value) => {
-        const copy = [...weights];
-        copy[index].actual = Number(value);
-        setWeights(copy);
-    };
-
-    const handleComplete = async () => {
-        await completePickup(pickup.id, weights, adminId);
+    const handleAssign = async () => {
+        if (!selectedAgent) return;
+        await assignAgentToPickup(pickup.id, selectedAgent);
         window.location.reload();
     };
 
     return (
-        <div className="bg-[#111827] border border-white/10 rounded-2xl p-5 space-y-4">
+        <div className="bg-[#111827] border border-white/10 p-4 rounded-xl space-y-3">
             <div className="text-sm text-gray-400">
                 {pickup.scheduledDate}
             </div>
 
-            {weights.map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
-                    <span className="capitalize">{item.type}</span>
-
-                    <input
-                        type="number"
-                        value={item.actual}
-                        onChange={(e) => updateActual(index, e.target.value)}
-                        className="w-20 p-1 bg-[#1f2937] rounded text-center"
-                    />
-                </div>
-            ))}
+            <select
+                value={selectedAgent}
+                onChange={(e) => setSelectedAgent(e.target.value)}
+                className="w-full bg-[#1f2937] p-2 rounded"
+            >
+                <option value="">Select Agent</option>
+                {agents.map(agent => (
+                    <option key={agent.id} value={agent.id}>
+                        {agent.email}
+                    </option>
+                ))}
+            </select>
 
             <button
-                onClick={handleComplete}
+                onClick={handleAssign}
                 className="w-full py-2 bg-primary rounded-xl"
             >
-                Mark as Completed
+                Assign
             </button>
         </div>
     );

@@ -10,6 +10,16 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 
+
+export const assignAgentToPickup = async (pickupId, agentId) => {
+    const pickupRef = doc(db, "pickups", pickupId);
+
+    await updateDoc(pickupRef, {
+        assignedAgentId: agentId,
+        status: "assigned",
+    });
+};
+
 export const createPickup = async (pickupData) => {
     const pickupRef = await addDoc(collection(db, "pickups"), {
         ...pickupData,
