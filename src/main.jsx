@@ -1,13 +1,13 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { HashRouter } from "react-router-dom"
+import { BrowserRouter } from "react-router-dom"
 import App from "./App"
 import { AppProvider } from "./context/AppContext"
 import "./index.css"
 import { Toaster } from "react-hot-toast"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <HashRouter>
+  <BrowserRouter>
     <AppProvider>
       <App />
       <Toaster
@@ -21,5 +21,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         }}
       />
     </AppProvider>
-  </HashRouter>
+  </BrowserRouter>
 )
