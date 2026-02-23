@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client"
 import { BrowserRouter } from "react-router-dom"
 import App from "./App"
 import { AppProvider } from "./context/AppContext"
+import { AuthProvider } from "./context/AuthContext"
 import "./index.css"
 import { Toaster } from "react-hot-toast"
 
