@@ -14,6 +14,7 @@ export function AppProvider({ children }) {
         const saved = localStorage.getItem("revalue_pickups")
         return saved ? JSON.parse(saved) : []
     })
+    const [redeemedPoints, setRedeemedPoints] = useState(0)
 
     useEffect(() => {
         localStorage.setItem(
@@ -63,6 +64,7 @@ export function AppProvider({ children }) {
         .filter(req => req.status === "completed")
         .reduce((acc, req) => acc + req.totalPoints, 0)
 
+    const availablePoints = totalPoints - redeemedPoints
     const treesPlanted = Math.floor(totalPoints / 100)
 
     const getLevel = (points) => {
@@ -74,6 +76,14 @@ export function AppProvider({ children }) {
 
     const userLevel = getLevel(totalPoints)
 
+    const redeemReward = (cost) => {
+        if (availablePoints < cost) {
+            alert("Not enough points!")
+            return
+        }
+
+        setRedeemedPoints((prev) => prev + cost)
+    }
     return (
         <AppContext.Provider
             value={{
@@ -81,8 +91,11 @@ export function AppProvider({ children }) {
                 createPickupRequest,
                 completePickup,
                 totalPoints,
+                availablePoints,
                 treesPlanted,
                 userLevel,
+                redeemReward,
+                redeemedPoints
             }}
         >
             {children}
