@@ -2,21 +2,42 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Trophy, History, Lightbulb, Bell } from "lucide-react";
 import CountUp from "react-countup";
-import { useApp } from "../context/AppContext";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 
 function Dashboard() {
-    const { availablePoints, treesPlanted } = useApp();
     const navigate = useNavigate();
     const hour = new Date().getHours();
 
     const { currentUser, userData } = useAuth();
-    const [pickups, setPickups] = useState([]);
 
-    // 🔥 REALTIME LISTENER
+    const [pickups, setPickups] = useState([]);
+    const [pointsData, setPointsData] = useState({
+        totalPoints: 0,
+        redeemedPoints: 0
+    });
+
+    // 🔥 USER POINTS LISTENER
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const userRef = doc(db, "users", currentUser.uid);
+
+        return onSnapshot(userRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+
+                setPointsData({
+                    totalPoints: data.totalPoints || 0,
+                    redeemedPoints: data.redeemedPoints || 0
+                });
+            }
+        });
+    }, [currentUser]);
+
+    // 🔥 PICKUPS LISTENER
     useEffect(() => {
         if (!currentUser) return;
 
@@ -36,6 +57,12 @@ function Dashboard() {
 
         return () => unsubscribe();
     }, [currentUser]);
+
+    // 🔥 DERIVED VALUES
+    const availablePoints =
+        pointsData.totalPoints - pointsData.redeemedPoints;
+
+    const treesPlanted = Math.floor(pointsData.totalPoints / 100);
 
     const greeting =
         hour < 12
@@ -97,7 +124,7 @@ function Dashboard() {
             {/* QUICK ACTIONS */}
             <div className="grid grid-cols-3 gap-3">
                 <QuickAction icon={Trophy} label="Leaderboard" path="/leaderboard" />
-                <QuickAction icon={History} label="History" path="/history" />
+                <QuickAction icon={History} label="History" path="/reward-history" />
                 <QuickAction icon={Lightbulb} label="Tips" path="/tips" />
             </div>
 

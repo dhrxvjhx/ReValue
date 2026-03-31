@@ -14,6 +14,8 @@
   "homepage": "https://dhrxvjhx.github.io/ReValue",
   "dependencies": {
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.7.0",
+    "firebase-functions": "^7.2.2",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",
@@ -21,7 +23,7 @@
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.13.0",
-    "recharts": "^3.7.0"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

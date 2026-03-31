@@ -2,58 +2,83 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getPickups, completePickupFlow } from "../firebase/pickupService";
 import { uploadImage } from "../firebase/imageService";
+import { subscribeToPickups } from "../firebase/pickupService";
 
-const AgentDashboard = () => {
+function AgentDashboard() {
     const { currentUser, userData } = useAuth();
     const [pickups, setPickups] = useState([]);
-
-    console.log("Agent UID:", currentUser.uid);
-    console.log("Pickup:", pickups);
 
     useEffect(() => {
         if (!currentUser || !userData) return;
 
-        fetchPickups();
+        const unsubscribe = subscribeToPickups(
+            currentUser.uid,
+            userData.role,
+            setPickups
+        );
+
+        return () => unsubscribe();
+
+        // getPickups(currentUser.uid, userData.role)
+        //     .then(setPickups)
+        //     .catch(console.error);
     }, [currentUser, userData]);
 
-    const fetchPickups = async () => {
-        const data = await getPickups(currentUser.uid, userData.role);
-        setPickups(data);
-    };
-
-    if (!pickups.length) {
-        return (
-            <div className="text-center text-gray-400 mt-10">
-                No assigned pickups.
-            </div>
-        );
-    }
+    const assigned = pickups.filter(p => p.status === "assigned");
+    const completed = pickups.filter(p => p.status === "completed");
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-2xl font-bold">My Pickups</h2>
+        <div className="space-y-8">
+            <Section title="🚚 Assigned Pickups">
+                {assigned.length === 0 ? (
+                    <Empty text="No assigned pickups" />
+                ) : (
+                    assigned.map(p => (
+                        <PickupCard
+                            key={p.id}
+                            pickup={p}
+                            refresh={setPickups}
+                            agentId={currentUser.uid} // ✅ PASS AGENT ID
+                        />
+                    ))
+                )}
+            </Section>
 
-            {pickups.map((pickup) => (
-                <PickupCard key={pickup.id} pickup={pickup} refresh={fetchPickups} />
-            ))}
+            <Section title="✅ Completed Pickups">
+                {completed.length === 0 ? (
+                    <Empty text="No completed pickups yet" />
+                ) : (
+                    completed.map(p => (
+                        <CompletedCard key={p.id} pickup={p} />
+                    ))
+                )}
+            </Section>
         </div>
     );
+}
 
-};
-
-/* 🔥 PICKUP CARD */
-function PickupCard({ pickup, refresh }) {
-    const [image, setImage] = useState(null);
-    const [weights, setWeights] = useState(
-        (pickup.items || []).map((item) => ({
-            ...item,
-            actual: Number(item.estimated) || 0,
-        }))
+function Section({ title, children }) {
+    return (
+        <div>
+            <h2 className="text-xl font-bold mb-3">{title}</h2>
+            <div className="space-y-4">{children}</div>
+        </div>
     );
+}
 
-    const updateWeight = (index, value) => {
+function Empty({ text }) {
+    return <div className="text-gray-400 text-sm">{text}</div>;
+}
+
+function PickupCard({ pickup, refresh, agentId }) {
+    const [weights, setWeights] = useState(
+        pickup.items.map(i => ({ ...i, actual: Number(i.estimated) }))
+    );
+    const [image, setImage] = useState(null);
+
+    const updateWeight = (i, val) => {
         const copy = [...weights];
-        copy[index].actual = Number(value);
+        copy[i].actual = Number(val);
         setWeights(copy);
     };
 
@@ -61,69 +86,72 @@ function PickupCard({ pickup, refresh }) {
         let imageUrl = null;
 
         if (image) {
-            imageUrl = await uploadImage(image, pickup.id);
+            imageUrl = await uploadImage(image);
         }
 
-        await completePickupFlow(pickup, weights, imageUrl);
-        refresh();
+        // ✅ CORRECT CALL
+        await completePickupFlow(pickup, weights, imageUrl, agentId);
+
+        // refresh
+        const updated = await getPickups(agentId, "agent");
+        refresh(updated);
     };
 
     return (
         <div className="bg-[#111827] border border-white/10 p-4 rounded-xl space-y-3">
-
-            <p className="text-sm text-gray-400">
-                {pickup.scheduledDate}
-            </p>
-
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400">{pickup.scheduledDate}</p>
+            <p className="text-xs text-gray-500">
                 📍 {pickup.address || "No address"}
             </p>
 
-            <p className="text-sm">
-                Status: <span className="text-primary">{pickup.status}</span>
-            </p>
-
-            {/* 🔥 ONLY SHOW INPUT IF NOT COMPLETED */}
-            {pickup.status !== "completed" && (
-                <>
-                    {(weights || []).map((item, i) => (
-                        <div key={`${pickup.id}-${i}`} className="flex justify-between items-center">
-                            <span className="capitalize">{item.type}</span>
-
-                            <input
-                                type="number"
-                                value={item.actual}
-                                onChange={(e) => updateWeight(i, e.target.value)}
-                                className="w-20 bg-[#1f2937] rounded p-1 text-center"
-                            />
-                        </div>
-                    ))}
-
+            {weights.map((item, i) => (
+                <div key={i} className="flex justify-between">
+                    <span>{item.type}</span>
                     <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setImage(e.target.files[0])}
-                        className="text-sm"
+                        type="number"
+                        value={item.actual}
+                        onChange={(e) => updateWeight(i, e.target.value)}
+                        className="w-20 bg-[#1f2937] text-center rounded"
                     />
+                </div>
+            ))}
 
-                    <button
-                        onClick={handleComplete}
-                        className="w-full py-2 bg-primary rounded-xl"
-                    >
-                        Complete Pickup
-                    </button>
-                </>
-            )}
+            <input
+                type="file"
+                onChange={(e) => setImage(e.target.files[0])}
+            />
 
-            {/* ✅ SHOW POINTS AFTER COMPLETION */}
-            {pickup.status === "completed" && (
-                <p className="text-green-400 font-semibold text-right">
-                    +{pickup.pointsEarned || 0} pts
-                </p>
-            )}
+            <button
+                onClick={handleComplete}
+                className="w-full py-2 bg-primary rounded-xl"
+            >
+                Complete Pickup
+            </button>
         </div>
     );
 }
 
+function CompletedCard({ pickup }) {
+    return (
+        <div className="bg-[#111827] border border-white/10 p-4 rounded-xl">
+            <p className="text-sm text-gray-400">{pickup.scheduledDate}</p>
+            <p className="text-green-400 mt-2">+{pickup.pointsEarned} pts</p>
+
+            {/* ✅ SHOW WHO COMPLETED */}
+            {pickup.completedBy && (
+                <p className="text-xs text-gray-500 mt-1">
+                    Completed by: {pickup.completedBy}
+                </p>
+            )}
+
+            {pickup.proofImageUrl && (
+                <img
+                    src={pickup.proofImageUrl}
+                    className="mt-2 rounded-xl"
+                />
+            )}
+        </div>
+    );
+}
 
 export default AgentDashboard;

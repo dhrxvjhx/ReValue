@@ -1,17 +1,53 @@
-import { motion } from "framer-motion"
-import { useApp } from "../context/AppContext"
-import { History } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion";
+import { History } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase/firebase";
+import { redeemRewardFirestore } from "../firebase/rewardService";
 
 function Rewards() {
-    const { availablePoints, redeemReward } = useApp()
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const { currentUser } = useAuth();
+
+    const [pointsData, setPointsData] = useState({
+        totalPoints: 0,
+        redeemedPoints: 0
+    });
+
+    // 🔥 USER POINTS
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const userRef = doc(db, "users", currentUser.uid);
+
+        return onSnapshot(userRef, (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+
+                setPointsData({
+                    totalPoints: data.totalPoints || 0,
+                    redeemedPoints: data.redeemedPoints || 0
+                });
+            }
+        });
+    }, [currentUser]);
+
+    const availablePoints =
+        pointsData.totalPoints - pointsData.redeemedPoints;
 
     const rewards = [
         { id: 1, name: "₹50 Amazon Voucher", cost: 200 },
         { id: 2, name: "Plant a Tree 🌳", cost: 300 },
         { id: 3, name: "Eco T-Shirt", cost: 500 },
-    ]
+    ];
+
+    const handleRedeem = async (reward) => {
+        if (!currentUser) return;
+
+        await redeemRewardFirestore(currentUser.uid, reward);
+    };
 
     return (
         <div className="space-y-6">
@@ -36,13 +72,7 @@ function Rewards() {
                     key={reward.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="
-            bg-[#111827]
-            border border-white/10
-            rounded-2xl
-            p-5
-            flex justify-between items-center
-          "
+                    className="bg-[#111827] border border-white/10 rounded-2xl p-5 flex justify-between items-center"
                 >
                     <div>
                         <p className="font-medium">
@@ -54,7 +84,7 @@ function Rewards() {
                     </div>
 
                     <button
-                        onClick={() => redeemReward(reward)}
+                        onClick={() => handleRedeem(reward)}
                         disabled={availablePoints < reward.cost}
                         className={`
               px-4 py-2 rounded-xl text-sm font-medium
@@ -69,7 +99,7 @@ function Rewards() {
                 </motion.div>
             ))}
         </div>
-    )
+    );
 }
 
-export default Rewards
+export default Rewards;

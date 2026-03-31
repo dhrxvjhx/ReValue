@@ -7,7 +7,8 @@ import {
     where,
     updateDoc,
     doc,
-    increment
+    increment,
+    onSnapshot
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -28,41 +29,55 @@ export const createPickup = async (pickupData) => {
     return pickupRef.id;
 };
 
-/* 🔹 GET PICKUPS */
+/* 🔹 GET PICKUPS (fallback if needed) */
 export const getPickups = async (uid, role) => {
     const pickupsRef = collection(db, "pickups");
 
+    let q;
+
     if (role === "admin") {
-        const snapshot = await getDocs(pickupsRef);
-        return snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
+        q = query(pickupsRef);
+    } else if (role === "agent") {
+        q = query(pickupsRef, where("assignedAgentId", "==", uid));
+    } else {
+        q = query(pickupsRef, where("userId", "==", uid));
     }
-
-    if (role === "agent") {
-        const q = query(
-            pickupsRef,
-            where("assignedAgentId", "==", uid)
-        );
-
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
-    }
-
-    const q = query(
-        pickupsRef,
-        where("userId", "==", uid)
-    );
 
     const snapshot = await getDocs(q);
+
     return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
     }));
+};
+
+/* 🔴 REAL-TIME SUBSCRIBE */
+export const subscribeToPickups = (uid, role, callback) => {
+    const pickupsRef = collection(db, "pickups");
+
+    let q;
+
+    if (role === "admin") {
+        q = query(pickupsRef); // ✅ IMPORTANT FIX
+    } else if (role === "agent") {
+        q = query(pickupsRef, where("assignedAgentId", "==", uid));
+    } else {
+        q = query(pickupsRef, where("userId", "==", uid));
+    }
+
+    return onSnapshot(
+        q,
+        (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            callback(data);
+        },
+        (error) => {
+            console.error("Realtime error:", error);
+        }
+    );
 };
 
 /* 🔹 ASSIGN AGENT */
@@ -75,7 +90,7 @@ export const assignAgentToPickup = async (pickupId, agentId) => {
     });
 };
 
-/* 🔥 COMPLETE FLOW (CORE LOGIC) */
+/* 🔥 COMPLETE FLOW */
 const POINTS_RATE = {
     plastic: 2,
     paper: 1,
@@ -83,7 +98,7 @@ const POINTS_RATE = {
     metal: 4,
 };
 
-export const completePickupFlow = async (pickup, weights, imageUrl) => {
+export const completePickupFlow = async (pickup, weights, imageUrl, agentId) => {
     const pickupRef = doc(db, "pickups", pickup.id);
 
     let totalPoints = 0;
@@ -93,16 +108,15 @@ export const completePickupFlow = async (pickup, weights, imageUrl) => {
         totalPoints += item.actual * rate;
     });
 
-    // ✅ update pickup
     await updateDoc(pickupRef, {
         status: "completed",
         actualWeights: weights,
         pointsEarned: totalPoints,
         proofImageUrl: imageUrl || null,
         completedAt: serverTimestamp(),
+        completedBy: agentId,
     });
 
-    // ✅ update user points
     const userRef = doc(db, "users", pickup.userId);
 
     await updateDoc(userRef, {
