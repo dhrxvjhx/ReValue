@@ -1,5 +1,7 @@
 import {
     collection,
+    addDoc,
+    serverTimestamp,
     query,
     where,
     onSnapshot,
@@ -8,6 +10,21 @@ import {
     orderBy
 } from "firebase/firestore";
 import { db } from "./firebase";
+
+/* 🔥 CREATE NOTIFICATION */
+export const createNotification = async (
+    userId,
+    title,
+    type
+) => {
+    await addDoc(collection(db, "notifications"), {
+        userId,
+        title,
+        type, // assigned / completed / reward etc
+        read: false,
+        createdAt: serverTimestamp(),
+    });
+};
 
 /* 🔥 REAL-TIME SUBSCRIBE */
 export const subscribeToNotifications = (uid, callback) => {

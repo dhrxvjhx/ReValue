@@ -4,18 +4,21 @@ import {
     subscribeToNotifications,
     markNotificationAsRead
 } from "../firebase/notificationService";
-import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import {
+    collection,
+    query,
+    where,
+    getDocs,
+    deleteDoc,
+    doc
+} from "firebase/firestore";
 
 function Notifications() {
     const { currentUser } = useAuth();
-    const navigate = useNavigate();
 
     const [notifications, setNotifications] = useState([]);
-    const [filter, setFilter] = useState("all"); // all | unread
+    const [filter, setFilter] = useState("unread"); // 🔥 DEFAULT FIX
 
     useEffect(() => {
         if (!currentUser) return;
@@ -28,16 +31,17 @@ function Notifications() {
         return () => unsubscribe();
     }, [currentUser]);
 
-    // 🔥 FILTERED DATA
+    // 🔥 FILTER LOGIC
     const filtered =
         filter === "unread"
             ? notifications.filter((n) => !n.read)
             : notifications;
 
-    // 🔥 CLEAR ALL
-    const handleClearAll = async () => {
-        if (!currentUser) return;
+    const handleRead = async (id) => {
+        await markNotificationAsRead(id);
+    };
 
+    const clearAll = async () => {
         const q = query(
             collection(db, "notifications"),
             where("userId", "==", currentUser.uid)
@@ -45,88 +49,79 @@ function Notifications() {
 
         const snapshot = await getDocs(q);
 
-        const deletes = snapshot.docs.map((d) =>
-            deleteDoc(doc(db, "notifications", d.id))
-        );
-
-        await Promise.all(deletes);
+        snapshot.forEach(async (docSnap) => {
+            await deleteDoc(doc(db, "notifications", docSnap.id));
+        });
     };
 
     return (
         <div className="space-y-6">
 
             {/* HEADER */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <ArrowLeft
-                        className="cursor-pointer text-gray-400"
-                        onClick={() => navigate(-1)}
-                    />
-                    <h2 className="text-xl font-semibold">
-                        Notifications
-                    </h2>
-                </div>
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Notifications</h2>
 
                 <button
-                    onClick={handleClearAll}
-                    className="text-xs text-red-400 hover:underline"
+                    onClick={clearAll}
+                    className="text-red-400 text-sm"
                 >
                     Clear All
                 </button>
             </div>
 
-            {/* FILTERS */}
+            {/* FILTER */}
             <div className="flex gap-2">
-                <FilterBtn
-                    active={filter === "all"}
-                    onClick={() => setFilter("all")}
-                    label="All"
-                />
-                <FilterBtn
-                    active={filter === "unread"}
+                <button
                     onClick={() => setFilter("unread")}
-                    label="Unread"
-                />
+                    className={`px-4 py-1 rounded-xl ${filter === "unread"
+                            ? "bg-primary"
+                            : "bg-[#1f2937]"
+                        }`}
+                >
+                    Unread
+                </button>
+
+                <button
+                    onClick={() => setFilter("all")}
+                    className={`px-4 py-1 rounded-xl ${filter === "all"
+                            ? "bg-primary"
+                            : "bg-[#1f2937]"
+                        }`}
+                >
+                    All
+                </button>
             </div>
 
             {/* LIST */}
             {filtered.length === 0 ? (
-                <p className="text-gray-400 text-sm">
-                    No notifications
-                </p>
-            ) : (
-                <div className="space-y-3">
-                    {filtered.map((n) => (
-                        <motion.div
-                            key={n.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            onClick={() => markNotificationAsRead(n.id)}
-                            className={`
-                p-4 rounded-xl border border-white/10 cursor-pointer
-                ${n.read ? "bg-[#111827] text-gray-400" : "bg-white/5 text-white"}
-              `}
-                        >
-                            {n.text}
-                        </motion.div>
-                    ))}
+                <div className="text-gray-400 text-sm">
+                    {filter === "unread"
+                        ? "No unread notifications"
+                        : "No notifications"}
                 </div>
+            ) : (
+                filtered.map((n) => (
+                    <div
+                        key={n.id}
+                        onClick={() => handleRead(n.id)}
+                        className={`
+                            p-4 rounded-xl border cursor-pointer
+                            ${n.read
+                                ? "bg-[#111827] border-white/10"
+                                : "bg-primary/10 border-primary"
+                            }
+                        `}
+                    >
+                        <p className="text-sm">{n.title}</p>
+
+                        <p className="text-xs text-gray-400 mt-1">
+                            {n.createdAt?.toDate?.().toLocaleString() ||
+                                "Just now"}
+                        </p>
+                    </div>
+                ))
             )}
         </div>
-    );
-}
-
-function FilterBtn({ active, onClick, label }) {
-    return (
-        <button
-            onClick={onClick}
-            className={`
-        px-3 py-1 rounded-lg text-sm
-        ${active ? "bg-primary text-white" : "bg-[#111827] text-gray-400"}
-      `}
-        >
-            {label}
-        </button>
     );
 }
 

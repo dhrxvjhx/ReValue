@@ -89,10 +89,8 @@ function PickupCard({ pickup, refresh, agentId }) {
             imageUrl = await uploadImage(image);
         }
 
-        // ✅ CORRECT CALL
         await completePickupFlow(pickup, weights, imageUrl, agentId);
 
-        // refresh
         const updated = await getPickups(agentId, "agent");
         refresh(updated);
     };

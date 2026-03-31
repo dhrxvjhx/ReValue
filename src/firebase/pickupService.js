@@ -10,6 +10,7 @@ import {
     increment,
     onSnapshot
 } from "firebase/firestore";
+import { createNotification } from "./notificationService";
 import { db } from "./firebase";
 
 /* 🔹 CREATE PICKUP */
@@ -88,6 +89,13 @@ export const assignAgentToPickup = async (pickupId, agentId) => {
         assignedAgentId: agentId,
         status: "assigned",
     });
+
+    // 🔔 notify agent
+    await createNotification(
+        agentId,
+        "🚚 New pickup assigned to you",
+        "assigned"
+    );
 };
 
 /* 🔥 COMPLETE FLOW */
@@ -98,7 +106,12 @@ const POINTS_RATE = {
     metal: 4,
 };
 
-export const completePickupFlow = async (pickup, weights, imageUrl, agentId) => {
+export const completePickupFlow = async (
+    pickup,
+    weights,
+    imageUrl,
+    agentId
+) => {
     const pickupRef = doc(db, "pickups", pickup.id);
 
     let totalPoints = 0;
@@ -108,18 +121,27 @@ export const completePickupFlow = async (pickup, weights, imageUrl, agentId) => 
         totalPoints += item.actual * rate;
     });
 
+    // ✅ update pickup
     await updateDoc(pickupRef, {
         status: "completed",
         actualWeights: weights,
         pointsEarned: totalPoints,
         proofImageUrl: imageUrl || null,
         completedAt: serverTimestamp(),
-        completedBy: agentId,
+        completedBy: agentId, // 🔥 IMPORTANT FIX
     });
 
+    // ✅ update user points
     const userRef = doc(db, "users", pickup.userId);
 
     await updateDoc(userRef, {
         totalPoints: increment(totalPoints),
     });
+
+    // 🔔 notify user
+    await createNotification(
+        pickup.userId,
+        "✅ Your pickup has been completed",
+        "completed"
+    );
 };
