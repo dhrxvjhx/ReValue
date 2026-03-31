@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { updateProfile } from "firebase/auth";
 import {
@@ -8,6 +8,7 @@ import {
 import { auth } from "../firebase/firebase";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 function Auth() {
     const [isLogin, setIsLogin] = useState(true);
@@ -19,7 +20,30 @@ function Auth() {
 
     const navigate = useNavigate();
     const location = useLocation();
-    const redirectPath = location.state?.from?.pathname || "/";
+
+    const { userData, currentUser } = useAuth();
+
+    const redirectPath = location.state?.from?.pathname;
+
+    // 🔥 ROLE-BASED REDIRECT
+    useEffect(() => {
+        if (!currentUser || !userData || !success) return;
+
+        const role = userData.role?.toLowerCase()?.trim();
+
+        if (redirectPath) {
+            navigate(redirectPath, { replace: true });
+            return;
+        }
+
+        if (role === "admin") {
+            navigate("/admin", { replace: true });
+        } else if (role === "agent") {
+            navigate("/agent", { replace: true });
+        } else {
+            navigate("/", { replace: true });
+        }
+    }, [userData, currentUser, success, navigate, redirectPath]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,7 +63,6 @@ function Auth() {
 
                 const user = userCredential.user;
 
-                // Update Firebase Auth profile
                 await updateProfile(user, {
                     displayName: name,
                 });
@@ -48,10 +71,6 @@ function Auth() {
             }
 
             setSuccess(true);
-
-            setTimeout(() => {
-                navigate(redirectPath, { replace: true });
-            }, 800);
         } catch (error) {
             toast.error(error.message);
         } finally {
@@ -99,8 +118,8 @@ function Auth() {
                     <button
                         onClick={() => setIsLogin(true)}
                         className={`flex-1 py-2 rounded-lg text-sm z-10 transition ${isLogin
-                            ? "text-black font-semibold"
-                            : "text-gray-300 hover:text-white"
+                                ? "text-black font-semibold"
+                                : "text-gray-300 hover:text-white"
                             }`}
                     >
                         Login
@@ -109,8 +128,8 @@ function Auth() {
                     <button
                         onClick={() => setIsLogin(false)}
                         className={`flex-1 py-2 rounded-lg text-sm z-10 transition ${!isLogin
-                            ? "text-black font-semibold"
-                            : "text-gray-300 hover:text-white"
+                                ? "text-black font-semibold"
+                                : "text-gray-300 hover:text-white"
                             }`}
                     >
                         Register
@@ -118,7 +137,6 @@ function Auth() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-
                     {!isLogin && (
                         <input
                             type="text"
@@ -156,7 +174,6 @@ function Auth() {
                                 : "Create Account"}
                     </button>
                 </form>
-
             </motion.div>
         </div>
     );

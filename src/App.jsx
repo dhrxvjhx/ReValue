@@ -12,6 +12,7 @@ import Tips from "./pages/Tips"
 import Auth from "./pages/Auth"
 import ProtectedRoute from "./routes/ProtectedRoute"
 import Settings from "./pages/Settings"
+import AgentDashboard from "./pages/AgentDashboard"
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="rewards" element={<Rewards />} />
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="admin" element={<AdminPanel />} />
+        <Route path="agent" element={<AgentDashboard />} />
         <Route path="schedule" element={<Schedule />} />
         <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />

@@ -1,43 +1,62 @@
-import { useLocation, useNavigate } from "react-router-dom"
-import { useState, useEffect } from "react"
-import { useApp } from "../context/AppContext"
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { createPickup } from "../firebase/pickupService";
+import { useAuth } from "../context/AuthContext";
 
 function Schedule() {
-    const location = useLocation()
-    const navigate = useNavigate()
-    const { createPickupRequest } = useApp()
+    const location = useLocation();
+    const navigate = useNavigate();
 
-    const items = location.state?.items
+    const { currentUser, userData } = useAuth(); // 🔥 IMPORTANT
 
-    const [date, setDate] = useState("")
-    const [timeSlot, setTimeSlot] = useState("9AM - 11AM")
+    const items = location.state?.items;
 
-    // Prevent direct access without estimate step
+    const [date, setDate] = useState("");
+    const [timeSlot, setTimeSlot] = useState("9AM - 11AM");
+
+    // Prevent direct access
     useEffect(() => {
         if (!items) {
-            navigate("/submit")
+            navigate("/submit");
         }
-    }, [items, navigate])
+    }, [items, navigate]);
 
-    if (!items) return null
+    if (!items) return null;
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!date) {
-            alert("Please select a date")
-            return
+            alert("Please select a date");
+            return;
         }
 
-        const pickupDateTime = `${date} | ${timeSlot}`
+        // 🔥 ADDRESS CHECK (VERY IMPORTANT)
+        if (!userData?.address) {
+            alert("Please add your address in Profile before scheduling pickup");
+            navigate("/profile");
+            return;
+        }
 
-        createPickupRequest(items, pickupDateTime)
+        const scheduledDate = `${date} | ${timeSlot}`;
 
-        navigate("/")
-    }
+        try {
+            await createPickup({
+                userId: currentUser.uid,
+                items,
+                scheduledDate,
+                address: userData.address, // 🔥 ADD THIS
+            });
+
+            navigate("/");
+        } catch (error) {
+            console.error("Error creating pickup:", error);
+        }
+    };
 
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold">Schedule Pickup</h2>
 
+            {/* DATE */}
             <div>
                 <label className="text-sm text-gray-400">Select Date</label>
                 <input
@@ -48,6 +67,7 @@ function Schedule() {
                 />
             </div>
 
+            {/* TIME SLOT */}
             <div>
                 <label className="text-sm text-gray-400">Select Time Slot</label>
                 <select
@@ -62,6 +82,7 @@ function Schedule() {
                 </select>
             </div>
 
+            {/* CONFIRM BUTTON */}
             <button
                 onClick={handleConfirm}
                 className="w-full py-3 bg-primary rounded-xl"
@@ -69,7 +90,7 @@ function Schedule() {
                 Confirm Pickup
             </button>
         </div>
-    )
+    );
 }
 
-export default Schedule
+export default Schedule;

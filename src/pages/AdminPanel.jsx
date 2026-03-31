@@ -1,92 +1,93 @@
-import { useApp } from "../context/AppContext"
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import {
+    getPickups,
+    assignAgentToPickup
+} from "../firebase/pickupService";
+import { getAgents } from "../firebase/firestoreService";
 
 function AdminPanel() {
-    const { pickupRequests, completePickup } = useApp()
+    const { currentUser, userData } = useAuth();
 
-    const scheduled = pickupRequests.filter(
-        (req) => req.status === "scheduled"
-    )
+    const [pickups, setPickups] = useState([]);
+    const [agents, setAgents] = useState([]);
 
-    if (scheduled.length === 0) {
+    useEffect(() => {
+        if (!currentUser || !userData) return;
+
+        getPickups(currentUser.uid, userData.role)
+            .then(setPickups)
+            .catch(console.error);
+
+        getAgents().then(setAgents);
+    }, [currentUser, userData]);
+
+    const pending = pickups.filter(
+        (p) => p.status === "pending"
+    );
+
+    if (pending.length === 0) {
         return (
             <div className="text-center text-gray-400 mt-10">
-                No scheduled pickups.
+                No pending pickups.
             </div>
-        )
+        );
     }
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Admin Panel</h2>
+            <h2 className="text-2xl font-bold">Assign Pickups</h2>
 
-            {scheduled.map((request) => (
-                <PickupCard
-                    key={request.id}
-                    request={request}
-                    onComplete={completePickup}
+            {pending.map((pickup) => (
+                <AssignCard
+                    key={pickup.id}
+                    pickup={pickup}
+                    agents={agents}
                 />
             ))}
         </div>
-    )
+    );
 }
 
-function PickupCard({ request, onComplete }) {
-    const [updatedItems, setUpdatedItems] = useState(
-        request.items.map((item) => ({
-            ...item,
-            actual: item.estimated,
-        }))
-    )
+function AssignCard({ pickup, agents }) {
+    const [selectedAgent, setSelectedAgent] = useState("");
 
-    const updateActual = (index, value) => {
-        const copy = [...updatedItems]
-        copy[index].actual = Number(value)
-        setUpdatedItems(copy)
-    }
+    const handleAssign = async () => {
+        if (!selectedAgent) return;
 
-    const handleComplete = () => {
-        onComplete(request.id, updatedItems)
-    }
+        await assignAgentToPickup(pickup.id, selectedAgent);
+
+        window.location.reload(); // simple refresh for now
+    };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="
-        bg-[#111827]
-        border border-white/10
-        rounded-2xl
-        p-5
-        space-y-4
-      "
-        >
+        <div className="bg-[#111827] border border-white/10 p-4 rounded-xl space-y-3">
             <div className="text-sm text-gray-400">
-                {request.pickupDate}
+                {pickup.scheduledDate}
             </div>
 
-            {updatedItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
-                    <span className="capitalize">{item.type}</span>
+            <select
+                value={selectedAgent}
+                onChange={(e) => setSelectedAgent(e.target.value)}
+                className="w-full bg-[#1f2937] p-2 rounded"
+            >
+                <option value="">Select Agent</option>
 
-                    <input
-                        type="number"
-                        value={item.actual}
-                        onChange={(e) => updateActual(index, e.target.value)}
-                        className="w-20 p-1 bg-[#1f2937] rounded text-center"
-                    />
-                </div>
-            ))}
+                {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                        {agent.email}
+                    </option>
+                ))}
+            </select>
 
             <button
-                onClick={handleComplete}
+                onClick={handleAssign}
                 className="w-full py-2 bg-primary rounded-xl"
             >
-                Mark as Completed
+                Assign to Agent
             </button>
-        </motion.div>
-    )
+        </div>
+    );
 }
 
-export default AdminPanel
+export default AdminPanel;
