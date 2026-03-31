@@ -23,20 +23,23 @@ export const messaging = getMessaging(app);
 
 // 🔑 GET TOKEN
 export const requestNotificationPermission = async () => {
+    if (Notification.permission === "denied") {
+        console.log("Notifications are blocked by user");
+        return null;
+    }
+
+    if (Notification.permission === "granted") {
+        return null; // already granted
+    }
+
     try {
         const permission = await Notification.requestPermission();
 
         if (permission === "granted") {
-            const token = await getToken(messaging, {
-                vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
-            });
-
-            return token;
-        } else {
-            console.log("Notification permission denied");
+            return true;
         }
     } catch (err) {
-        console.error("FCM error:", err);
+        console.error("Notification error:", err);
     }
 };
 

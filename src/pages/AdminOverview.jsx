@@ -61,7 +61,7 @@ function AdminOverview() {
                     Waste Distribution
                 </h3>
 
-                <div className="h-64">
+                <div className="w-full h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData}>
                             <XAxis dataKey="type" />
