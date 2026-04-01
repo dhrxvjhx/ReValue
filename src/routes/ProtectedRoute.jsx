@@ -5,8 +5,7 @@ const ProtectedRoute = ({ children }) => {
     const { currentUser, loading } = useAuth();
     const location = useLocation();
 
-    // ⛔ WAIT until Firebase resolves auth
-    if (loading) return null;
+    if (loading) return <div className="text-white">Loading...</div>;
 
     if (!currentUser) {
         return <Navigate to="/auth" state={{ from: location }} replace />;
