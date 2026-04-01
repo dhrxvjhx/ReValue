@@ -2,10 +2,13 @@ export const uploadImage = async (file) => {
     const formData = new FormData();
 
     formData.append("file", file);
-    formData.append("upload_preset", "ReValue");
+    formData.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+    );
 
     const res = await fetch(
-        "https://api.cloudinary.com/v1_1/dsfurom3m/image/upload",
+        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
         {
             method: "POST",
             body: formData,
@@ -14,5 +17,5 @@ export const uploadImage = async (file) => {
 
     const data = await res.json();
 
-    return data.secure_url; // 🔥 THIS is your image URL
+    return data.secure_url;
 };

@@ -1,199 +1,224 @@
-import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { doc, updateDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-import toast from "react-hot-toast";
-import { motion } from "framer-motion";
+import { LEVELS, BADGES } from "../config/gamification";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
     const { currentUser, userData, logout } = useAuth();
+    const [pickups, setPickups] = useState([]);
+    const [showBadges, setShowBadges] = useState(false);
+    const navigate = useNavigate();
 
-    const [activeField, setActiveField] = useState(null);
-    const [value, setValue] = useState("");
+    const role = userData?.role || "user";
 
-    const openEditor = (field, currentValue) => {
-        setActiveField(field);
-        setValue(currentValue || "");
-    };
+    useEffect(() => {
+        if (!currentUser) return;
 
-    const handleSave = async () => {
-        try {
-            await updateDoc(doc(db, "users", currentUser.uid), {
-                [activeField]: value,
-            });
+        let q;
 
-            toast.success("Updated!");
-            setActiveField(null);
-        } catch {
-            toast.error("Failed to update");
+        if (role === "admin") {
+            q = collection(db, "pickups");
+        } else if (role === "agent") {
+            q = query(
+                collection(db, "pickups"),
+                where("assignedAgentId", "==", currentUser.uid)
+            );
+        } else {
+            q = query(
+                collection(db, "pickups"),
+                where("userId", "==", currentUser.uid)
+            );
         }
-    };
 
-    const total = userData?.totalPoints || 0;
-    const redeemed = userData?.redeemedPoints || 0;
-    const available = total - redeemed;
+        return onSnapshot(q, (snap) => {
+            setPickups(snap.docs.map(d => d.data()));
+        });
+    }, [currentUser, role]);
 
-    const level = Math.floor(total / 100);
+    const totalPoints = userData?.totalPoints || 0;
+    const pickupCount = pickups.length;
+    const completed = pickups.filter(p => p.status === "completed").length;
+    const trees = Math.floor(totalPoints / 100);
 
-    const badge =
-        level < 2
-            ? "Beginner 🌱"
-            : level < 5
-                ? "Recycler ♻"
-                : "Eco Pro 🌍";
+    const level =
+        LEVELS.find(l => totalPoints >= l.min && totalPoints < l.max) ||
+        LEVELS[LEVELS.length - 1];
+
+    const progress =
+        ((totalPoints - level.min) / (level.max - level.min)) * 100;
+
+    const badgeState = BADGES.map(b => ({
+        ...b,
+        unlocked: b.condition({
+            pickups: pickupCount,
+            points: totalPoints,
+            trees,
+        }),
+    }));
 
     return (
         <div className="space-y-6">
 
-            {/* 🔥 HEADER */}
-            <div className="bg-[#111827] border border-white/10 rounded-3xl p-6 text-center space-y-4">
+            {/* HERO */}
+            <div className="bg-gradient-to-br from-[#1e293b] to-[#020617] p-6 rounded-3xl relative">
 
-                {/* Avatar */}
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary flex items-center justify-center text-xl font-bold">
-                    {userData?.name?.[0] || "U"}
+                <button
+                    onClick={() => navigate("/settings")}
+                    className="absolute top-4 right-4 text-xs bg-white/10 px-3 py-1 rounded-xl"
+                >
+                    ⚙️ Settings
+                </button>
+
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-xl">
+                        {role === "user" && "♻️"}
+                        {role === "agent" && "🚚"}
+                        {role === "admin" && "🧠"}
+                    </div>
+
+                    <div>
+                        <h2 className="text-lg font-semibold">{userData?.name}</h2>
+
+                        {role === "user" && (
+                            <p className="text-sm text-primary">
+                                Level {level.level} • {level.title}
+                            </p>
+                        )}
+
+                        {role !== "user" && (
+                            <p className="text-sm text-primary capitalize">{role}</p>
+                        )}
+                    </div>
                 </div>
 
-                <h2 className="text-xl font-bold">{userData?.name}</h2>
-                <p className="text-primary">{badge}</p>
-                <p className="text-sm text-gray-400">Level {level}</p>
+                {/* USER PROGRESS */}
+                {role === "user" && (
+                    <div className="mt-5">
+                        <div className="flex justify-between text-xs text-gray-400">
+                            <span>{totalPoints} pts</span>
+                            <span>{level.max}</span>
+                        </div>
 
-                {/* 🔥 STATS STRIP */}
-                <div className="bg-[#1f2937] rounded-2xl p-4 flex justify-between items-center mt-4">
-
-                    {/* Total */}
-                    <div className="text-center flex-1">
-                        <p className="text-xs text-gray-400">Total</p>
-                        <p className="text-lg font-semibold">{total}</p>
+                        <div className="h-2 bg-[#111827] rounded-full mt-1">
+                            <div
+                                className="h-2 bg-primary rounded-full"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
                     </div>
+                )}
+            </div>
 
-                    {/* Available */}
-                    <div className="text-center flex-1">
-                        <p className="text-xs text-gray-400">Available</p>
-                        <p className="text-2xl font-bold text-primary">{available}</p>
+            {/* STATS */}
+            <div className="grid grid-cols-3 gap-3">
+
+                {role === "user" && (
+                    <>
+                        <Stat label="Points" value={totalPoints} />
+                        <Stat label="Pickups" value={pickupCount} />
+                        <Stat label="Trees" value={trees} />
+                    </>
+                )}
+
+                {role === "agent" && (
+                    <>
+                        <Stat label="Assigned" value={pickupCount} />
+                        <Stat label="Completed" value={completed} />
+                        <Stat label="Earnings" value={`₹${userData?.earnings || 0}`} />
+                    </>
+                )}
+
+                {role === "admin" && (
+                    <>
+                        <Stat label="Total" value={pickupCount} />
+                        <Stat label="Completed" value={completed} />
+                        <Stat label="Pending" value={pickupCount - completed} />
+                    </>
+                )}
+            </div>
+
+            {/* BADGES */}
+            {role === "user" && (
+                <div
+                    className="bg-[#020617] p-4 rounded-2xl cursor-pointer"
+                    onClick={() => setShowBadges(true)}
+                >
+                    <p className="text-xs text-gray-400 mb-2">Badges</p>
+
+                    <div className="flex gap-3">
+                        {badgeState.slice(0, 4).map(b => (
+                            <div
+                                key={b.id}
+                                className={`p-3 rounded-xl text-center ${b.unlocked ? "bg-[#111827]" : "bg-gray-800 opacity-40"
+                                    }`}
+                            >
+                                <div>{b.icon}</div>
+                                <p className="text-xs">{b.label}</p>
+                            </div>
+                        ))}
                     </div>
-
-                    {/* Redeemed */}
-                    <div className="text-center flex-1">
-                        <p className="text-xs text-gray-400">Redeemed</p>
-                        <p className="text-lg font-semibold">{redeemed}</p>
-                    </div>
-
                 </div>
-            </div>
+            )}
 
-            {/* ⚙ SETTINGS LIST */}
-            <div className="bg-[#111827] border border-white/10 rounded-2xl divide-y divide-white/10">
+            {/* 🔥 FIXED MODAL */}
+            {showBadges && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
 
-                <SettingsItem
-                    label="Name"
-                    value={userData?.name}
-                    onClick={() => openEditor("name", userData?.name)}
-                />
+                    <div className="bg-[#020617] w-full max-w-sm rounded-2xl flex flex-col max-h-[80vh]">
 
-                <SettingsItem
-                    label="Email"
-                    value={userData?.email}
-                    disabled
-                />
+                        {/* HEADER (STICKY) */}
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#020617] z-10">
+                            <h3 className="font-semibold">🏆 All Badges</h3>
+                            <button
+                                onClick={() => setShowBadges(false)}
+                                className="text-sm text-gray-400"
+                            >
+                                ✕
+                            </button>
+                        </div>
 
-                <SettingsItem
-                    label="Phone"
-                    value={userData?.phone}
-                    onClick={() => openEditor("phone", userData?.phone)}
-                />
+                        {/* SCROLLABLE CONTENT */}
+                        <div className="p-4 overflow-y-auto">
 
-                <SettingsItem
-                    label="Address"
-                    value={userData?.address}
-                    onClick={() => openEditor("address", userData?.address)}
-                />
-            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {badgeState.map(b => (
+                                    <div
+                                        key={b.id}
+                                        className={`p-4 rounded-xl text-center ${b.unlocked
+                                                ? "bg-[#111827]"
+                                                : "bg-gray-800 opacity-40 grayscale"
+                                            }`}
+                                    >
+                                        <div className="text-lg">{b.icon}</div>
+                                        <p className="text-xs mt-1">{b.label}</p>
+                                    </div>
+                                ))}
+                            </div>
 
-            {/* 🚪 LOGOUT */}
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* LOGOUT */}
             <button
                 onClick={logout}
                 className="w-full py-3 bg-red-500/20 text-red-400 rounded-xl"
             >
                 Logout
             </button>
-
-            {/* ✨ MODAL */}
-            {activeField && (
-                <EditModal
-                    field={activeField}
-                    value={value}
-                    setValue={setValue}
-                    onClose={() => setActiveField(null)}
-                    onSave={handleSave}
-                />
-            )}
         </div>
     );
 }
 
-/* 🔹 SETTINGS ROW */
-function SettingsItem({ label, value, onClick, disabled }) {
+function Stat({ label, value }) {
     return (
-        <div
-            onClick={!disabled ? onClick : undefined}
-            className={`flex justify-between items-center p-4 ${disabled ? "opacity-50" : "cursor-pointer hover:bg-white/5"
-                }`}
-        >
-            <span>{label}</span>
-
-            <span className="text-gray-400 text-sm text-right max-w-[60%] break-words">
-                {value || "Not set"}
-            </span>
-        </div>
-    );
-}
-
-/* 🔹 MODAL */
-function EditModal({ field, value, setValue, onClose, onSave }) {
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="bg-[#111827] p-6 rounded-2xl w-[90%] max-w-sm space-y-4"
-            >
-                <h3 className="text-lg font-semibold capitalize">
-                    Edit {field}
-                </h3>
-
-                {/* 🔥 MULTILINE FOR ADDRESS */}
-                {field === "address" ? (
-                    <textarea
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        rows={3}
-                        className="w-full p-2 bg-[#1f2937] rounded"
-                        placeholder="Enter full pickup address..."
-                    />
-                ) : (
-                    <input
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        className="w-full p-2 bg-[#1f2937] rounded"
-                    />
-                )}
-
-                <div className="flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-gray-400"
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        onClick={onSave}
-                        className="px-4 py-2 bg-primary rounded"
-                    >
-                        Save
-                    </button>
-                </div>
-            </motion.div>
+        <div className="bg-[#111827] p-4 rounded-xl text-center">
+            <p className="text-xs text-gray-400">{label}</p>
+            <p className="text-lg font-semibold">{value}</p>
         </div>
     );
 }

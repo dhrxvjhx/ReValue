@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../firebase/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { createUserIfNotExists } from "../firebase/firestoreService";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -16,7 +16,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        let unsubscribeUserDoc = null;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
             setLoading(true);
 
             if (user) {
@@ -24,13 +26,15 @@ export const AuthProvider = ({ children }) => {
                     await createUserIfNotExists(user);
 
                     const userDocRef = doc(db, "users", user.uid);
-                    const userDoc = await getDoc(userDocRef);
 
-                    if (userDoc.exists()) {
-                        setUserData(userDoc.data());
-                    } else {
-                        setUserData(null);
-                    }
+                    // 🔥 REAL-TIME LISTENER (FIX)
+                    unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setUserData(docSnap.data());
+                        } else {
+                            setUserData(null);
+                        }
+                    });
 
                     setCurrentUser(user);
                 } catch (error) {
@@ -41,12 +45,19 @@ export const AuthProvider = ({ children }) => {
             } else {
                 setCurrentUser(null);
                 setUserData(null);
+
+                if (unsubscribeUserDoc) {
+                    unsubscribeUserDoc();
+                }
             }
 
             setLoading(false);
         });
 
-        return unsubscribe;
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeUserDoc) unsubscribeUserDoc();
+        };
     }, []);
 
     return (
@@ -54,11 +65,11 @@ export const AuthProvider = ({ children }) => {
             value={{
                 currentUser,
                 userData,
-                loading,   // ✅ CRITICAL
+                loading,
                 logout,
             }}
         >
-            {children}   {/* ✅ ALWAYS render */}
+            {children}
         </AuthContext.Provider>
     );
 };

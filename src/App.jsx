@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import History from "./pages/History";
 import SubmitWaste from "./pages/SubmitWaste";
 import Rewards from "./pages/Rewards";
 import Leaderboard from "./pages/Leaderboard";
@@ -12,8 +13,8 @@ import Profile from "./pages/Profile";
 import RewardHistory from "./pages/RewardHistory";
 import Tips from "./pages/Tips";
 import Auth from "./pages/Auth";
-import ProtectedRoute from "./routes/ProtectedRoute";
 import Settings from "./pages/Settings";
+import ProtectedRoute from "./routes/ProtectedRoute";
 import AgentDashboard from "./pages/AgentDashboard";
 import AdminOverview from "./pages/AdminOverview";
 import AdminPickups from "./pages/AdminPickups";
@@ -28,7 +29,7 @@ function App() {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    if (!currentUser) return; // ✅ IMPORTANT FIX
+    if (!currentUser) return;
 
     const setupNotifications = async () => {
       const token = await requestNotificationPermission();
@@ -57,6 +58,8 @@ function App() {
         <Route path="submit" element={<SubmitWaste />} />
         <Route path="rewards" element={<Rewards />} />
         <Route path="leaderboard" element={<Leaderboard />} />
+        <Route path="history" element={<History />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="admin" element={<AdminPanel />} />
         <Route path="admin/overview" element={<AdminOverview />} />
         <Route path="admin/pickups" element={<AdminPickups />} />

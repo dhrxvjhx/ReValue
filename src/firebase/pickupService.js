@@ -7,7 +7,7 @@ import {
     where,
     updateDoc,
     doc,
-    increment,
+    getDoc,
     onSnapshot
 } from "firebase/firestore";
 import { createNotification } from "./notificationService";
@@ -30,7 +30,7 @@ export const createPickup = async (pickupData) => {
     return pickupRef.id;
 };
 
-/* 🔹 GET PICKUPS (fallback if needed) */
+/* 🔹 GET PICKUPS */
 export const getPickups = async (uid, role) => {
     const pickupsRef = collection(db, "pickups");
 
@@ -59,7 +59,7 @@ export const subscribeToPickups = (uid, role, callback) => {
     let q;
 
     if (role === "admin") {
-        q = query(pickupsRef); // ✅ IMPORTANT FIX
+        q = query(pickupsRef);
     } else if (role === "agent") {
         q = query(pickupsRef, where("assignedAgentId", "==", uid));
     } else {
@@ -82,15 +82,16 @@ export const subscribeToPickups = (uid, role, callback) => {
 };
 
 /* 🔹 ASSIGN AGENT */
-export const assignAgentToPickup = async (pickupId, agentId) => {
+export const assignAgentToPickup = async (pickupId, agentId, adminId = null) => {
     const pickupRef = doc(db, "pickups", pickupId);
 
     await updateDoc(pickupRef, {
         assignedAgentId: agentId,
         status: "assigned",
+        assignedAt: serverTimestamp(),
+        assignedBy: adminId || null,
     });
 
-    // 🔔 notify agent
     await createNotification(
         agentId,
         "🚚 New pickup assigned to you",
@@ -113,6 +114,7 @@ export const completePickupFlow = async (
     agentId
 ) => {
     const pickupRef = doc(db, "pickups", pickup.id);
+    const userRef = doc(db, "users", pickup.userId);
 
     let totalPoints = 0;
 
@@ -128,15 +130,27 @@ export const completePickupFlow = async (
         pointsEarned: totalPoints,
         proofImageUrl: imageUrl || null,
         completedAt: serverTimestamp(),
-        completedBy: agentId, // 🔥 IMPORTANT FIX
+        completedBy: agentId,
     });
 
-    // ✅ update user points
-    const userRef = doc(db, "users", pickup.userId);
+    // 🔥 CORRECT USER UPDATE (FIXED)
+    const userSnap = await getDoc(userRef);
 
-    await updateDoc(userRef, {
-        totalPoints: increment(totalPoints),
-    });
+    if (userSnap.exists()) {
+        const userData = userSnap.data();
+
+        const currentPoints = userData.totalPoints || 0;
+
+        const newTotalPoints = currentPoints + totalPoints;
+
+        // 🌳 trees based on TOTAL points (NOT per pickup)
+        const newTrees = Math.floor(newTotalPoints / 100);
+
+        await updateDoc(userRef, {
+            totalPoints: newTotalPoints,
+            treesPlanted: newTrees,
+        });
+    }
 
     // 🔔 notify user
     await createNotification(

@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Trophy, History, Lightbulb, Bell } from "lucide-react";
+import { Trophy, History, Lightbulb, Truck, Star } from "lucide-react";
 import CountUp from "react-countup";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import PickupTimeline from "../components/PickupTimeline";
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -19,7 +20,7 @@ function Dashboard() {
         redeemedPoints: 0
     });
 
-    // 🔥 USER POINTS LISTENER
+    /* 🔥 USER POINTS */
     useEffect(() => {
         if (!currentUser) return;
 
@@ -37,7 +38,7 @@ function Dashboard() {
         });
     }, [currentUser]);
 
-    // 🔥 PICKUPS LISTENER
+    /* 🔥 PICKUPS */
     useEffect(() => {
         if (!currentUser) return;
 
@@ -58,7 +59,7 @@ function Dashboard() {
         return () => unsubscribe();
     }, [currentUser]);
 
-    // 🔥 DERIVED VALUES
+    /* 🔥 CALCULATIONS */
     const availablePoints =
         pointsData.totalPoints - pointsData.redeemedPoints;
 
@@ -71,21 +72,29 @@ function Dashboard() {
                 ? "Good Afternoon"
                 : "Good Evening";
 
+    /* 🔥 FIXED ACTIVE PICKUP */
+    const activePickup = pickups
+        .filter(p => p.status !== "completed")
+        .sort((a, b) => {
+            const dateA = new Date(a.scheduledDate?.split("|")[0] || 0);
+            const dateB = new Date(b.scheduledDate?.split("|")[0] || 0);
+            return dateA - dateB;
+        })[0];
+
+    const totalPickups = pickups.length;
+
     return (
-        <div className="relative space-y-8 overflow-hidden">
+        <div className="space-y-8">
 
             {/* HEADER */}
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">ReValue 🌱</h1>
-                <Bell className="text-gray-400" />
-            </div>
+            <h1 className="text-3xl font-bold">ReValue 🌱</h1>
 
             {/* HERO */}
             <motion.div
                 key={availablePoints}
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-white/10 p-6 rounded-3xl shadow-2xl"
+                className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-white/10 p-6 rounded-3xl"
             >
                 <h2 className="text-2xl font-semibold">
                     {greeting}, {userData?.name || "User"} 👋
@@ -98,45 +107,56 @@ function Dashboard() {
                 </h3>
             </motion.div>
 
-            {/* PICKUP STATUS */}
-            <div className="bg-[#111827] border border-white/10 p-5 rounded-2xl">
-                <h3 className="text-lg font-semibold mb-2">Pickup Status</h3>
 
-                {pickups.length === 0 ? (
+            {/* 🔥 PICKUP CARD */}
+            <div className="bg-[#111827] border border-white/10 p-5 rounded-2xl">
+
+                <h3 className="text-lg font-semibold mb-2">🚚 Next Pickup</h3>
+
+                {!activePickup ? (
                     <p className="text-gray-400 text-sm">
-                        No pickup scheduled yet.
+                        No upcoming pickups
                     </p>
                 ) : (
-                    <div className="text-sm space-y-1">
-                        <p>
-                            Status:{" "}
-                            <span className="text-primary font-medium">
-                                {pickups[pickups.length - 1]?.status}
-                            </span>
+                    <div className="space-y-3">
+
+                        <p className="text-gray-400 text-sm">
+                            {activePickup.scheduledDate}
                         </p>
-                        <p className="text-gray-400">
-                            Date: {pickups[pickups.length - 1]?.scheduledDate}
-                        </p>
+
+                        <PickupTimeline
+                            status={activePickup.status}
+                            pickup={activePickup}
+                        />
+
                     </div>
                 )}
+
             </div>
 
             {/* QUICK ACTIONS */}
             <div className="grid grid-cols-3 gap-3">
                 <QuickAction icon={Trophy} label="Leaderboard" path="/leaderboard" />
-                <QuickAction icon={History} label="History" path="/reward-history" />
+                <QuickAction icon={History} label="History" path="/history" />
                 <QuickAction icon={Lightbulb} label="Tips" path="/tips" />
             </div>
 
-            {/* ECO CARD */}
+            {/* 🔥 IMPACT CARD */}
             <motion.div className="bg-gradient-to-r from-emerald-700 to-green-500 p-6 rounded-3xl flex justify-between">
+
                 <div>
-                    <h3 className="text-xl font-bold">Trees Planted 🌳</h3>
+                    <h3 className="text-xl font-bold">Impact 🌍</h3>
+                    <p className="text-sm opacity-80 mt-1">
+                        You’ve helped recycle waste sustainably
+                    </p>
                 </div>
+
                 <div className="text-4xl font-bold">
                     <CountUp end={treesPlanted} duration={1.5} />
                 </div>
+
             </motion.div>
+
         </div>
     );
 }

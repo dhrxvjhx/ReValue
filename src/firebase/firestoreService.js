@@ -7,7 +7,8 @@ import {
     query,
     where,
     orderBy,
-    limit
+    limit,
+    updateDoc
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -44,16 +45,30 @@ export const createUserIfNotExists = async (user) => {
                 address: "",
                 createdAt: new Date(),
             });
+        } else {
+            // 🔥 SAFETY: ensure fields exist (IMPORTANT)
+            const data = userSnap.data();
+
+            const updates = {};
+
+            if (data.totalPoints === undefined) updates.totalPoints = 0;
+            if (data.redeemedPoints === undefined) updates.redeemedPoints = 0;
+            if (data.treesPlanted === undefined) updates.treesPlanted = 0;
+
+            if (Object.keys(updates).length > 0) {
+                await updateDoc(userRef, updates);
+            }
         }
     } catch (error) {
         console.error("Firestore error:", error);
     }
 };
 
-/* 🔥 LEADERBOARD */
+/* 🔥 LEADERBOARD (FILTERED + CLEAN) */
 export const getLeaderboard = async () => {
     const q = query(
         collection(db, "users"),
+        where("role", "==", "user"),
         orderBy("totalPoints", "desc"),
         limit(10)
     );

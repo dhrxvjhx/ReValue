@@ -6,10 +6,9 @@ import {
 } from "../firebase/pickupService";
 import { getAgents } from "../firebase/firestoreService";
 import toast from "react-hot-toast";
-import StatsBar from "../components/ui/StatsBar";
-import EmptyState from "../components/ui/EmptyState";
-import SkeletonCard from "../components/ui/SkeletonCard";
 import PickupTimeline from "../components/PickupTimeline";
+import EmptyState from "../components/ui/EmptyState";
+
 
 function AdminPanel() {
     const { currentUser, userData } = useAuth();
@@ -25,13 +24,12 @@ function AdminPanel() {
 
         const init = async () => {
             try {
-                // 🔴 REALTIME
                 unsubscribe = subscribeToPickups(
                     currentUser.uid,
                     userData.role.toLowerCase(),
                     (data) => {
                         setPickups(data);
-                        setLoading(false); // ✅ FIX
+                        setLoading(false);
                     }
                 );
 
@@ -56,7 +54,8 @@ function AdminPanel() {
 
     const handleAssign = async (pickupId, agentId) => {
         try {
-            await assignAgentToPickup(pickupId, agentId);
+            // ✅ FIX: PASS ADMIN ID
+            await assignAgentToPickup(pickupId, agentId, currentUser.uid);
 
             toast.success("Agent assigned!");
         } catch (err) {
@@ -71,9 +70,14 @@ function AdminPanel() {
 
     return (
         <div className="space-y-8">
+
+            {/* 🔥 PENDING */}
             <Section title="📦 Pending Pickups">
                 {pending.length === 0 ? (
-                    <Empty text="No pending pickups" />
+                    <EmptyState
+                        title="No pending pickups"
+                        subtitle="All pickups are assigned"
+                    />
                 ) : (
                     pending.map(p => (
                         <AssignCard
@@ -86,15 +90,24 @@ function AdminPanel() {
                 )}
             </Section>
 
+            {/* 🔥 ASSIGNED */}
             <Section title="🚚 Assigned Pickups">
                 {assigned.length === 0 ? (
-                    <Empty text="No assigned pickups" />
+                    <EmptyState
+                        title="No assigned pickups"
+                        subtitle="Pickups will appear here once assigned"
+                    />
                 ) : (
                     assigned.map(p => (
-                        <AssignedCard key={p.id} pickup={p} agents={agents} />
+                        <AssignedCard
+                            key={p.id}
+                            pickup={p}
+                            agents={agents}
+                        />
                     ))
                 )}
             </Section>
+
         </div>
     );
 }
@@ -131,7 +144,8 @@ function AssignCard({ pickup, agents, onAssign }) {
     };
 
     return (
-        <div className="bg-[#111827] border border-white/10 p-4 rounded-xl space-y-3">
+        <div className="bg-[#111827] border border-white/10 p-5 rounded-2xl space-y-3">
+
             <p className="text-sm text-gray-400">{pickup.scheduledDate}</p>
 
             <p className="text-xs text-gray-500">
@@ -141,7 +155,7 @@ function AssignCard({ pickup, agents, onAssign }) {
             <div className="text-xs text-gray-400">
                 {pickup.items?.map((i, idx) => (
                     <div key={idx}>
-                        {i.type} - {i.estimated}kg
+                        {i.type} • {i.estimated}kg
                     </div>
                 ))}
             </div>
@@ -149,10 +163,9 @@ function AssignCard({ pickup, agents, onAssign }) {
             <select
                 value={selectedAgent}
                 onChange={(e) => setSelectedAgent(e.target.value)}
-                className="w-full bg-[#1f2937] p-2 rounded"
+                className="w-full bg-[#1f2937] p-2 rounded-xl"
             >
                 <option value="">Select Agent</option>
-
                 {agents.map(agent => (
                     <option key={agent.id} value={agent.id}>
                         {agent.name || agent.email}
@@ -176,7 +189,8 @@ function AssignedCard({ pickup, agents }) {
     const agent = agents.find(a => a.id === pickup.assignedAgentId);
 
     return (
-        <div className="bg-[#111827] border border-white/10 p-4 rounded-xl space-y-2">
+        <div className="bg-[#111827] border border-white/10 p-5 rounded-2xl space-y-3">
+
             <p className="text-sm text-gray-400">{pickup.scheduledDate}</p>
 
             <p className="text-xs text-gray-500">
@@ -186,6 +200,13 @@ function AssignedCard({ pickup, agents }) {
             <p className="text-green-400 text-sm">
                 Assigned to: {agent?.name || agent?.email || "Unknown"}
             </p>
+
+            {/* 🔥 TIMELINE */}
+            <PickupTimeline
+                status={pickup.status}
+                pickup={pickup}
+            />
+
         </div>
     );
 }

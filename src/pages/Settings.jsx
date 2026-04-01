@@ -1,155 +1,108 @@
-import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import {
-    doc,
-    updateDoc
-} from "firebase/firestore";
-import {
-    updateProfile,
-    updatePassword,
-    sendPasswordResetEmail,
-    deleteUser
-} from "firebase/auth";
+import { useState, useEffect } from "react";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-import toast from "react-hot-toast";
 
 function Settings() {
     const { currentUser, userData } = useAuth();
 
-    const [name, setName] = useState(userData?.name || "");
-    const [newPassword, setNewPassword] = useState("");
+    const [form, setForm] = useState({
+        name: "",
+        phone: "",
+        address: "",
+        notifications: true,
+    });
 
-    const handleProfileUpdate = async () => {
-        try {
-            await updateDoc(doc(db, "users", currentUser.uid), { name });
-
-            await updateProfile(currentUser, {
-                displayName: name,
+    useEffect(() => {
+        if (userData) {
+            setForm({
+                name: userData.name || "",
+                phone: userData.phone || "",
+                address: userData.address || "",
+                notifications: userData.notifications ?? true,
             });
-
-            toast.success("Profile updated!");
-        } catch {
-            toast.error("Update failed");
         }
-    };
+    }, [userData]);
 
-    const handlePasswordChange = async () => {
-        if (!newPassword || newPassword.length < 6) {
-            toast.error("Password must be at least 6 characters");
-            return;
-        }
-
-        try {
-            await updatePassword(currentUser, newPassword);
-            toast.success("Password updated!");
-            setNewPassword("");
-        } catch {
-            toast.error("Re-login required to change password");
-        }
-    };
-
-    const handleResetEmail = async () => {
-        try {
-            await sendPasswordResetEmail(currentUser.auth, currentUser.email);
-            toast.success("Password reset email sent");
-        } catch {
-            toast.error("Failed to send reset email");
-        }
-    };
-
-    const handleDeleteAccount = async () => {
-        try {
-            await deleteUser(currentUser);
-            toast.success("Account deleted");
-        } catch {
-            toast.error("Re-login required to delete account");
-        }
+    const save = async () => {
+        await updateDoc(doc(db, "users", currentUser.uid), form);
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-10">
+        <div className="space-y-6">
 
-            <h1 className="text-3xl font-bold">Settings</h1>
+            <h2 className="text-xl font-semibold">⚙️ Settings</h2>
 
-            {/* PROFILE */}
-            <section className="space-y-6 border-b border-white/10 pb-8">
-                <h2 className="text-lg font-semibold text-primary">Profile</h2>
+            <Section title="Profile">
+                <Input label="Name" value={form.name} onChange={v => setForm({ ...form, name: v })} />
+                <Input label="Phone" value={form.phone} onChange={v => setForm({ ...form, phone: v })} />
+            </Section>
 
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-sm text-gray-400">Full Name</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full mt-2 p-3 bg-[#1f2937] rounded-lg border border-white/10 text-white"
-                        />
-                    </div>
+            <Section title="Address">
+                <Input label="Address" value={form.address} onChange={v => setForm({ ...form, address: v })} />
+            </Section>
 
-                    <div>
-                        <label className="text-sm text-gray-400">Email</label>
-                        <input
-                            type="email"
-                            value={currentUser?.email || ""}
-                            disabled
-                            className="w-full mt-2 p-3 bg-[#111827] rounded-lg border border-white/10 text-gray-400"
-                        />
-                    </div>
+            <Section title="Preferences">
+                <Toggle label="Notifications" value={form.notifications} onChange={v => setForm({ ...form, notifications: v })} />
+            </Section>
 
-                    <button
-                        onClick={handleProfileUpdate}
-                        className="px-6 py-2 bg-primary text-black rounded-lg font-semibold"
+            <Section title="About">
+                <p className="text-sm text-gray-400">
+                    Made with ❤️ by{" "}
+                    <a
+                        href="https://github.com/dhrxvjhx"
+                        target="_blank"
+                        className="text-primary underline"
                     >
-                        Save Changes
-                    </button>
-                </div>
-            </section>
+                        Dhruv Jha
+                    </a>
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Version 1.0.0</p>
+            </Section>
 
-            {/* SECURITY */}
-            <section className="space-y-6 border-b border-white/10 pb-8">
-                <h2 className="text-lg font-semibold text-primary">Security</h2>
+            <button
+                onClick={save}
+                className="w-full py-3 bg-primary rounded-xl"
+            >
+                Save Changes
+            </button>
+        </div>
+    );
+}
 
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-sm text-gray-400">New Password</label>
-                        <input
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full mt-2 p-3 bg-[#1f2937] rounded-lg border border-white/10 text-white"
-                        />
-                    </div>
+function Section({ title, children }) {
+    return (
+        <div className="bg-[#020617] p-4 rounded-2xl space-y-3">
+            <p className="text-xs text-gray-400">{title}</p>
+            {children}
+        </div>
+    );
+}
 
-                    <div className="flex gap-4">
-                        <button
-                            onClick={handlePasswordChange}
-                            className="px-6 py-2 bg-primary text-black rounded-lg font-semibold"
-                        >
-                            Change Password
-                        </button>
+function Input({ label, value, onChange }) {
+    return (
+        <div>
+            <p className="text-xs text-gray-400 mb-1">{label}</p>
+            <input
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full bg-[#111827] p-3 rounded-xl"
+            />
+        </div>
+    );
+}
 
-                        <button
-                            onClick={handleResetEmail}
-                            className="px-6 py-2 bg-white/10 rounded-lg"
-                        >
-                            Send Reset Email
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            {/* DANGER ZONE */}
-            <section className="space-y-6">
-                <h2 className="text-lg font-semibold text-red-400">Danger Zone</h2>
-
-                <button
-                    onClick={handleDeleteAccount}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold"
-                >
-                    Delete Account
-                </button>
-            </section>
-
+function Toggle({ label, value, onChange }) {
+    return (
+        <div className="flex justify-between items-center">
+            <p>{label}</p>
+            <div
+                onClick={() => onChange(!value)}
+                className={`w-10 h-5 rounded-full p-1 cursor-pointer ${value ? "bg-primary" : "bg-gray-600"
+                    }`}
+            >
+                <div className="w-4 h-4 bg-white rounded-full" />
+            </div>
         </div>
     );
 }
